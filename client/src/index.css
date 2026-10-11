@@ -1,0 +1,318 @@
+:root {
+  --bg: #16111f;
+  --panel: #2b2140;
+  --panel-edge: #120d1a;
+  --accent: #ffcf5c;
+  --accent-dark: #c98f1c;
+  --text: #f4ecff;
+  --muted: #b3a6c9;
+  --error: #ff7a7a;
+  --success: #8be08b;
+  font-family: Itim, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.pixel {
+  image-rendering: pixelated;
+}
+
+/* ---------- หน้าเกม ---------- */
+.app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.game {
+  width: 100%;
+  height: 100%;
+  touch-action: none; /* กันหน้าเว็บเลื่อนตอนลากนิ้วบนเกม */
+}
+
+.topbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #2b2140e6;
+}
+
+.topbar .stat {
+  color: var(--muted);
+}
+
+.topbar button {
+  padding: 2px 10px;
+}
+
+.hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #000a;
+  font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---------- หน้าล็อกอิน / สร้างตัวละคร ---------- */
+.screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  background: url('/assets/tiles/tiny-town.png') 0 0 / 48px 44px, var(--bg);
+  background-blend-mode: multiply;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+  padding: 24px;
+  border: 4px solid var(--panel-edge);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 6px 0 var(--panel-edge);
+}
+
+.panel h1 {
+  margin: 0;
+  text-align: center;
+  color: var(--accent);
+  font-size: 28px;
+}
+
+.panel p {
+  margin: 0;
+}
+
+.panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.panel input {
+  padding: 8px 10px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #1d1630;
+  color: var(--text);
+}
+
+button {
+  padding: 8px 12px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #4a3d66;
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #2b1d26;
+  box-shadow: 0 3px 0 var(--accent-dark);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tabs button {
+  flex: 1;
+}
+
+.tabs button.active {
+  background: var(--accent);
+  color: #2b1d26;
+}
+
+.error {
+  color: var(--error);
+}
+
+.success {
+  color: var(--success);
+}
+
+.preview {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  background: #7ec86e;
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch-row span {
+  width: 56px;
+  color: var(--muted);
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.swatch.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- เลือกคอมมู ---------- */
+.panel.wide {
+  max-width: 640px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.community-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px;
+  text-align: left;
+  background: #3a2f55;
+  box-shadow: 0 4px 0 var(--panel-edge);
+  transition: transform 0.1s;
+}
+
+.community-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #4a3d6e;
+}
+
+.community-card .emoji {
+  font-size: 28px;
+}
+
+.community-card small {
+  color: var(--muted);
+}
+
+.community-card .online {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+/* ---------- แชท ---------- */
+.chat {
+  position: absolute;
+  left: 8px;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  width: min(340px, calc(100vw - 16px));
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #2b2140e0;
+}
+
+.chat-toggle {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 4px 10px;
+}
+
+.chat-list {
+  height: 180px;
+  overflow-y: auto;
+  padding: 0 10px;
+  font-size: 15px;
+}
+
+.chat-list p {
+  margin: 2px 0;
+  overflow-wrap: anywhere;
+}
+
+.chat-list .mine strong {
+  color: var(--accent);
+}
+
+.chat-system {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.chat form {
+  padding: 6px;
+}
+
+.chat input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 2px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #1d1630;
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .chat-list {
+    height: 110px;
+  }
+  .hint {
+    display: none;
+  }
+  .chat {
+    bottom: 8px;
+  }
+}

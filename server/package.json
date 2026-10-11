@@ -1,0 +1,28 @@
+{
+  "name": "pixel-study-town-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@colyseus/schema": "^3.0.76",
+    "@colyseus/ws-transport": "^0.16.5",
+    "@supabase/supabase-js": "^2.117.3",
+    "colyseus": "^0.16.5",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsx": "4.20",
+    "typescript": "^5.9.3"
+  }
+}
