@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from './lib/supabase';
 import { fetchProfile, type Profile } from './lib/profile';
+import { useFocus } from './lib/focus';
 import { AuthScreen } from './ui/AuthScreen';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { CommunityPicker } from './ui/CommunityPicker';
@@ -34,6 +35,7 @@ export default function App() {
   }, []);
 
   const userId = session?.user.id;
+  const focus = useFocus(userId); // อยู่ระดับแอป นาฬิกาจะไม่หยุดตอนเดินเปลี่ยนห้อง
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -95,6 +97,7 @@ export default function App() {
       onEditProfile={() => setEditing(true)}
       onVisitHome={visitHome}
       onLeaveHome={leaveHome}
+      focus={focus}
     />
   );
 }

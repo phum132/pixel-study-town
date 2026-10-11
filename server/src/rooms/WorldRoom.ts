@@ -42,6 +42,12 @@ export abstract class WorldRoom extends Room<WorldState> {
       p.lastMoveAt = now;
     });
 
+    // สถานะโฟกัสเป็นแค่การแสดงผล (เวลาโฟกัสจริงนับในฐานข้อมูล ดู 003_todos_focus.sql)
+    this.onMessage('status', (client, s: { focusing?: unknown }) => {
+      const p = this.state.players.get(client.sessionId);
+      if (p) p.focusing = s?.focusing === true;
+    });
+
     this.onMessage('chat', (client, raw: unknown) => {
       const p = this.state.players.get(client.sessionId);
       if (!p || typeof raw !== 'string') return;

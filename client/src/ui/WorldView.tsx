@@ -10,6 +10,9 @@ import { PhaserGame } from '../game/PhaserGame';
 import { CharacterPreview } from './CharacterPreview';
 import { ChatBox } from './ChatBox';
 import { RoomEditor } from './RoomEditor';
+import { PomodoroTimer } from './PomodoroTimer';
+import { TodoPanel } from './TodoPanel';
+import type { FocusApi } from '../lib/focus';
 
 export type WorldTarget = { kind: 'town'; communityId: string } | { kind: 'home'; ownerId: string };
 
@@ -20,6 +23,7 @@ type Props = {
   onEditProfile: () => void;
   onVisitHome: (ownerId: string) => void;
   onLeaveHome: () => void;
+  focus: FocusApi;
 };
 
 const MAX_MESSAGES = 50;
@@ -28,7 +32,7 @@ const LEAVE_REASONS: Record<number, string> = {
 };
 
 // เข้าห้องบนเซิร์ฟเวอร์ (เมืองของคอมมู หรือบ้านของใครสักคน) แล้วแสดงเกม + แถบด้านบน + แชท
-export function WorldView({ profile, target, onPickCommunity, onEditProfile, onVisitHome, onLeaveHome }: Props) {
+export function WorldView({ profile, target, onPickCommunity, onEditProfile, onVisitHome, onLeaveHome, focus }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [home, setHome] = useState<HomeData | null>(null);
   const [ownerName, setOwnerName] = useState('');
@@ -38,6 +42,8 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [card, setCard] = useState<{ userId: string; name: string } | null>(null);
   const [editing, setEditing] = useState(false);
+  const [showTodos, setShowTodos] = useState(false);
+  const focusing = focus.state.phase === 'focus';
   const bridge = useMemo(() => new Phaser.Events.EventEmitter(), []);
 
   const isHome = target.kind === 'home';
@@ -89,6 +95,11 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
       joined?.leave();
     };
   }, [isHome, ownerId, communityId, attempt, bridge]);
+
+  // บอกเซิร์ฟเวอร์ว่ากำลังโฟกัสอยู่ไหม (ส่งใหม่ทุกครั้งที่เข้าห้องใหม่หรือสถานะเปลี่ยน)
+  useEffect(() => {
+    room?.send('status', { focusing });
+  }, [room, focusing]);
 
   // นับคนออนไลน์ในห้องนี้
   useEffect(() => {
@@ -182,6 +193,9 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
             <button onClick={onPickCommunity}>เปลี่ยนคอมมู</button>
           </>
         )}
+        <button onClick={() => setShowTodos(!showTodos)}>
+          📝 {isHome && !isOwner ? `งานของ ${ownerName}` : 'งานของฉัน'}
+        </button>
         <button onClick={onEditProfile}>แต่งตัว</button>
       </header>
 
@@ -198,6 +212,15 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
         </div>
       )}
 
+      <PomodoroTimer focus={focus} />
+      {showTodos && !editing && (
+        <TodoPanel
+          ownerId={isHome ? ownerId : profile.id}
+          ownerName={isHome && !isOwner ? ownerName : profile.username}
+          editable={!isHome || isOwner}
+          onClose={() => setShowTodos(false)}
+        />
+      )}
       {editing && home && <RoomEditor saved={home} bridge={bridge} onSave={saveRoom} onClose={cancelEdit} />}
       <ChatBox room={room} messages={messages} />
       <p className="hint">

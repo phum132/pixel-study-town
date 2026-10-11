@@ -12,6 +12,8 @@ export class Avatar {
   private bubble?: Phaser.GameObjects.Text;
   private bubbleTimer?: Phaser.Time.TimerEvent;
   private textureKey: string;
+  private name: string;
+  private focusing = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, name: string, colors: CharacterColors) {
     this.scene = scene;
@@ -19,7 +21,15 @@ export class Avatar {
     this.textureKey = 'av-' + Object.values(colors).join('').replace(/#/g, '');
     createCharacterTexture(scene, this.textureKey, colors);
     this.sprite = scene.physics.add.sprite(x, y, this.textureKey, 0);
+    this.name = name;
     this.nameTag = makeLabel(scene, name, '#ffffff').setOrigin(0.5, 1);
+  }
+
+  // กำลังโฟกัส: ขึ้น 📖 หน้าชื่อ และชื่อเป็นสีทอง
+  setFocusing(on: boolean) {
+    if (on === this.focusing) return;
+    this.focusing = on;
+    this.nameTag.setText(on ? `📖 ${this.name}` : this.name).setColor(on ? '#ffcf5c' : '#ffffff');
   }
 
   setPose(dir: Dir, moving: boolean) {

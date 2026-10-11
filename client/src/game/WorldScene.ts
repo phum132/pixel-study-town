@@ -8,7 +8,7 @@ import type { HomeData } from '../lib/home';
 const SPEED = 80; // พิกเซลต่อวินาที (ต้องตรงกับเซิร์ฟเวอร์)
 const SEND_INTERVAL_MS = 100; // ส่งตำแหน่งให้เซิร์ฟเวอร์ 10 ครั้ง/วินาที
 
-type NetPlayer = { userId: string; name: string; avatar: string; x: number; y: number; dir: Dir; moving: boolean };
+type NetPlayer = { userId: string; name: string; avatar: string; x: number; y: number; dir: Dir; moving: boolean; focusing: boolean };
 
 // ข้อมูลที่ React ส่งให้ฉากตอนเริ่ม
 // bridge = ช่องทางคุยกันระหว่างเกมกับ React เช่น เกมบอก "กดตัวละครคนนี้" แล้ว React เปิดการ์ดโปรไฟล์
@@ -123,6 +123,8 @@ export abstract class WorldScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     this.moveMe();
+    const mine = this.room.state.players.get(this.room.sessionId) as NetPlayer | undefined;
+    this.me.setFocusing(mine?.focusing ?? false);
     this.me.follow();
     this.sendPosition();
 
@@ -134,6 +136,7 @@ export abstract class WorldScene extends Phaser.Scene {
       const s = other.sprite;
       s.setPosition(s.x + (p.x - s.x) * t, s.y + (p.y - s.y) * t);
       other.setPose(p.dir, p.moving || Math.hypot(p.x - s.x, p.y - s.y) > 1);
+      other.setFocusing(p.focusing);
       other.follow();
     }
 

@@ -9,6 +9,7 @@ export class Player extends Schema {
   @type('number') y = 0;
   @type('string') dir = 'down'; // down | up | left | right
   @type('boolean') moving = false;
+  @type('boolean') focusing = false; // กำลังโฟกัส (Pomodoro) อยู่ไหม แสดงเป็น 📖 เหนือหัว
 
   // ค่าที่ไม่มี @type อยู่แค่ในเซิร์ฟเวอร์ ไม่ส่งให้ใคร
   lastMoveAt = 0;
