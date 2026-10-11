@@ -4,17 +4,19 @@
 
 A cozy pixel-art town where people study together. Walk around with friends, chat, decorate your own room, track your to-dos, focus with a Pomodoro timer and listen to lofi music.
 
-> 🚧 Work in progress. Phases 0–6 of 10 are done; the minigame, ranking and public launch are next.
+> 🚧 Work in progress. Phases 0–7 are done; classrooms, ranking and public launch are next.
 
 ## Features
 
-- 🏘️ **Pixel town** you walk around in (keyboard, or tap-and-drag on mobile)
-- 👤 **Accounts and characters** with email login and custom hair, skin, shirt and pants colors
+- 🏘️ **Pixel town with 4 districts** (library, café, homes, lake park) you walk around in (keyboard, or tap-and-drag on mobile)
+- 👤 **Accounts and characters**: email login and 88 pixel characters to choose from
 - 👥 **Real-time multiplayer**: see others walk, chat with speech bubbles, join one of 6 study communities
 - 🏠 **Personal homes**: place furniture, pick floor and wall themes, visit friends' homes, or make yours private
 - 📝 **To-do list**: choose per task whether visitors can see it
 - ⏱️ **Pomodoro timer** (15/25/50 min plus breaks). Focusing players show 📖 above their heads.
 - 🎵 **Lofi radio** with 6 YouTube live stations or your own link, plus a "home music" setting visitors can join
+- 🐍 **Snake arcade** in the town square, with a top-10 board. The database replays every game to count the score.
+- 📱 **Mobile layout** with a bottom tab bar (chat / focus / to-do)
 
 ### Anti-cheat by design
 
@@ -22,6 +24,7 @@ The browser is never trusted with anything that counts toward ranking:
 
 - The game server checks movement speed and rejects teleporting.
 - Player names come from the database, not from the browser.
+- **Snake scores are recounted by the database**: the browser sends only the key presses, the database replays the game from its own seed and checks that it wasn't played faster than real time.
 - **Focus time is measured by the database clock** (`start_focus` / `finish_focus`), so changing your PC clock does nothing.
 - Row Level Security means you can only edit your own profile, room and tasks. Players cannot write XP or coins at all.
 
@@ -64,7 +67,8 @@ supabase/migrations/     SQL files that create the database tables and rules
 
 1. Create a free project at [supabase.com](https://supabase.com) (Singapore region if you are in Southeast Asia).
 2. Open **SQL Editor → New query** and run each file in `supabase/migrations/` **once, in order**:
-   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql`
+   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql`
+   (`005_snake_fix.sql` is only for databases that ran an early version of 004.)
 3. For local testing only: **Authentication → Sign In / Providers → Email** → turn off **Confirm email**, so you can make test accounts without real inboxes. Turn it back on before going public.
 
 ### 3. Create the `.env` files
@@ -97,11 +101,16 @@ Open http://localhost:5173. To test multiplayer, open a second account in an inc
 - [x] Phase 4: personal homes, decorating, themes, visiting
 - [x] Phase 5: to-do list and server-timed Pomodoro
 - [x] Phase 6: lofi music
-- [ ] Phase 7: Snake minigame with server-checked scores
-- [ ] Phase 8: XP, ranks, leaderboards, furniture shop
-- [ ] Phase 9: moderation (filter, report, block), security review, public deploy
+- [x] Phase 7: Snake minigame with database-verified scores, mobile layout, Ninja Adventure characters and a 4-district town
+- [ ] Phase 8: classrooms with Q&A and practice problems
+- [ ] Phase 9: XP, ranks, leaderboards, furniture shop
+- [ ] Phase 10: live quiz and group study
+- [ ] Phase 11: a themed town per community
+- [ ] Phase 12: moderation (filter, report, block), security review, public deploy
 
 ## Credits
 
-- Art: [Tiny Town](https://kenney.nl/assets/tiny-town) and [Roguelike Indoors](https://kenney.nl/assets/roguelike-indoors) by **Kenney** (CC0). See `client/public/assets/LICENSES.md`.
+- Town and characters: [Ninja Adventure](https://pixel-boy.itch.io/ninja-adventure-asset-pack) by **Pixel-boy & AAA** (CC0).
+- Furniture: [Roguelike Indoors](https://kenney.nl/assets/roguelike-indoors) (and the first town, [Tiny Town](https://kenney.nl/assets/tiny-town)) by **Kenney** (CC0).
+- See `client/public/assets/LICENSES.md`.
 - Music: streamed from the original YouTube channels (Lofi Girl, Chillhop Music) through YouTube's official embedded player.

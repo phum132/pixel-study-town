@@ -1,14 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { DEFAULT_COLORS, PALETTES, type CharacterColors } from '../game/character';
+import { CHARACTERS, DEFAULT_CHARACTER } from '../lib/characters';
 import { saveProfile, USERNAME_RULE, type Profile } from '../lib/profile';
 import { CharacterPreview } from './CharacterPreview';
-
-const LABELS: Record<keyof CharacterColors, string> = {
-  hair: 'ผม',
-  skin: 'ผิว',
-  shirt: 'เสื้อ',
-  pants: 'กางเกง',
-};
+import { Faceset } from './Faceset';
 
 type Props = {
   userId: string;
@@ -17,10 +11,10 @@ type Props = {
   onCancel?: () => void;
 };
 
-// หน้าตั้งชื่อและแต่งตัวละคร ใช้ทั้งตอนสมัครใหม่และตอนกดแก้ไขทีหลัง
+// หน้าตั้งชื่อและเลือกตัวละคร ใช้ทั้งตอนสมัครใหม่และตอนกด "แต่งตัว" ทีหลัง
 export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
   const [username, setUsername] = useState(profile?.username ?? '');
-  const [colors, setColors] = useState<CharacterColors>(profile?.avatar ?? DEFAULT_COLORS);
+  const [character, setCharacter] = useState(profile?.avatar.character ?? DEFAULT_CHARACTER);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,8 +28,9 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
     setBusy(true);
     setError('');
     try {
-      await saveProfile(userId, name, colors, !profile);
-      onSaved({ id: userId, xp: 0, coins: 0, ...profile, username: name, avatar: colors });
+      const avatar = { character };
+      await saveProfile(userId, name, avatar, !profile);
+      onSaved({ id: userId, xp: 0, coins: 0, ...profile, username: name, avatar });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -45,30 +40,30 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
 
   return (
     <div className="screen">
-      <form className="panel" onSubmit={submit}>
-        <h1>{profile ? 'แก้ไขตัวละคร' : 'สร้างตัวละคร'}</h1>
+      <form className="panel wide" onSubmit={submit}>
+        <h1>{profile ? 'เปลี่ยนตัวละคร' : 'สร้างตัวละคร'}</h1>
         <div className="preview">
-          <CharacterPreview colors={colors} />
+          <CharacterPreview character={character} />
         </div>
         <label>
           ชื่อในเกม
           <input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={16} placeholder="เช่น ภูมิ_เรียนเก่ง" />
         </label>
-        {(Object.keys(PALETTES) as (keyof CharacterColors)[]).map((part) => (
-          <div key={part} className="swatch-row">
-            <span>{LABELS[part]}</span>
-            {PALETTES[part].map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`swatch ${colors[part] === c ? 'selected' : ''}`}
-                style={{ background: c }}
-                aria-label={`${LABELS[part]} ${c}`}
-                onClick={() => setColors({ ...colors, [part]: c })}
-              />
-            ))}
-          </div>
-        ))}
+        <span className="muted">เลือกตัวละคร ({CHARACTERS.length} ตัว)</span>
+        <div className="character-grid">
+          {CHARACTERS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`character-pick ${character === c ? 'selected' : ''}`}
+              onClick={() => setCharacter(c)}
+              title={c}
+              aria-label={c}
+            >
+              <Faceset character={c} size={38} />
+            </button>
+          ))}
+        </div>
         <button className="primary" disabled={busy}>
           {busy ? 'กำลังบันทึก...' : profile ? 'บันทึก' : 'เข้าเมือง!'}
         </button>

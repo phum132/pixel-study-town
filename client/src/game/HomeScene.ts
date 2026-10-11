@@ -42,6 +42,7 @@ export class HomeScene extends WorldScene {
   }
 
   preload() {
+    super.preload();
     this.load.spritesheet('indoor', 'assets/tiles/roguelike-indoor.png', { frameWidth: 16, frameHeight: 16, spacing: 1 });
   }
 

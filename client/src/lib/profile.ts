@@ -1,10 +1,10 @@
 import { supabase } from './supabase';
-import { DEFAULT_COLORS, type CharacterColors } from '../game/character';
+import { parseAvatar, type Avatar } from './characters';
 
 export type Profile = {
   id: string;
   username: string;
-  avatar: CharacterColors;
+  avatar: Avatar;
   xp: number;
   coins: number;
 };
@@ -19,11 +19,11 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  return { ...data, avatar: { ...DEFAULT_COLORS, ...data.avatar } };
+  return { ...data, avatar: parseAvatar(data.avatar) };
 }
 
 // สร้างใหม่ถ้ายังไม่มี หรืออัปเดตชื่อ/หน้าตาถ้ามีแล้ว
-export async function saveProfile(userId: string, username: string, avatar: CharacterColors, isNew: boolean) {
+export async function saveProfile(userId: string, username: string, avatar: Avatar, isNew: boolean) {
   const query = isNew
     ? supabase.from('profiles').insert({ id: userId, username, avatar })
     : supabase.from('profiles').update({ username, avatar }).eq('id', userId);

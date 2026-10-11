@@ -706,3 +706,475 @@ button.icon {
   color: var(--text);
   font: inherit;
 }
+
+/* ---------- ตู้เกม Snake ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  background: #0009;
+}
+
+.arcade {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 4px solid var(--panel-edge);
+  border-radius: 12px;
+  background: #3a2f55;
+  box-shadow: 0 6px 0 var(--panel-edge);
+}
+
+.arcade header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.arcade header strong {
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.arcade-score {
+  flex: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.arcade header button {
+  padding: 0 8px;
+}
+
+.arcade-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.arcade-screen {
+  position: relative;
+  width: min(320px, calc(100vw - 48px));
+  aspect-ratio: 1;
+  border: 3px solid var(--panel-edge);
+  border-radius: 4px;
+  touch-action: none;
+}
+
+.arcade-screen canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.arcade-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+  background: #1d2b1fcc;
+}
+
+.arcade-overlay p {
+  margin: 0;
+}
+
+.arcade-count {
+  font-size: 56px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.arcade-top {
+  width: 170px;
+  min-width: 0;
+}
+
+.arcade-top ol {
+  margin: 6px 0 0;
+  padding-left: 22px;
+}
+
+.arcade-top li span {
+  display: inline-block;
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.arcade-top li b {
+  float: right;
+  color: var(--accent);
+}
+
+.dpad {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dpad div {
+  display: flex;
+  gap: 4px;
+}
+
+.dpad button {
+  width: 52px;
+  height: 44px;
+  font-size: 18px;
+}
+
+.dpad.dim {
+  opacity: 0.4;
+}
+
+/* มือถือ/จอสัมผัส: โชว์ปุ่มทิศ */
+@media (pointer: coarse) {
+  .dpad {
+    display: flex;
+  }
+}
+
+.dpad button {
+  touch-action: manipulation; /* แตะรัวๆ แล้ว iOS ไม่ซูมหน้าจอ */
+}
+
+/* มือถือ: ระหว่างเล่นซ่อนตาราง 10 อันดับ ปุ่มทิศจะได้อยู่ใต้กระดานพอดีจอ */
+@media (pointer: coarse) {
+  .arcade.playing .arcade-top {
+    display: none;
+  }
+}
+
+/* เพลงกำลังเล่น: อยู่เหนือฉากดำของตู้เกม วิดีโอจะไม่ถูกบัง (กฎ YouTube) */
+.music.playing {
+  z-index: 11;
+}
+
+/* ===================================================================
+   ปรับเลย์เอาต์ตามรีวิวของฝ่ายออกแบบ (กฎท้ายไฟล์ชนะกฎเดิมด้านบน)
+   =================================================================== */
+
+/* ---------- B: แถบด้านบนแถวเดียวเสมอ ถ้ายาวเกินเลื่อนข้างได้ ---------- */
+.app {
+  height: 100vh;
+  height: 100dvh; /* มือถือ: ไม่ให้แถบเบราว์เซอร์บังด้านล่าง */
+}
+
+.topbar {
+  max-width: calc(100% - 16px);
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.topbar > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+.music,
+.player-card {
+  top: 64px;
+}
+
+.player-card {
+  z-index: 6;
+}
+
+.todo-panel {
+  bottom: 230px;
+}
+
+/* แชทหดตามความสูงจอ ให้ด้านบนแชทอยู่ต่ำกว่ากล่องเพลงเสมอ */
+.chat-list {
+  height: clamp(80px, calc(100dvh - 460px), 180px);
+}
+
+/* จอเตี้ยแต่กว้าง: เปิดรายการสถานีแล้ววางไว้ข้างวิดีโอ แทนการต่อลงข้างล่าง */
+@media (max-height: 760px) and (min-width: 601px) {
+  .music.open {
+    display: grid;
+    grid-template-columns: 200px 200px;
+    align-items: start;
+    width: auto;
+  }
+  .music.open > :not(.music-video):not(.music-body) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- E: เรื่องเล็ก ---------- */
+.hint {
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: center;
+}
+
+.community-card:disabled {
+  cursor: not-allowed;
+}
+
+.music-loading {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ---------- A: มือถือ = แถบแท็บด้านล่าง เปิดแผงได้ทีละแผง ---------- */
+.tabbar {
+  display: none;
+}
+
+.slot {
+  display: contents; /* คอม: แผงแสดงตามปกติ */
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  .hint,
+  .desk-only,
+  .chat-toggle {
+    display: none;
+  }
+
+  .slot {
+    display: none;
+  }
+
+  .slot.show {
+    display: contents;
+  }
+
+  .tabbar {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    z-index: 3;
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    border: 3px solid var(--panel-edge);
+    border-radius: 10px;
+    background: #2b2140f0;
+  }
+
+  .tabbar button {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 44px;
+    padding: 2px;
+    font-size: 13px;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabbar button.active {
+    background: var(--accent);
+    color: #2b1d26;
+  }
+
+  .tabbar .dot {
+    position: absolute;
+    top: 4px;
+    right: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--error);
+  }
+
+  /* ทุกแผงใช้ช่องล่างเดียวกัน: ความสูง = ช่องว่างใต้จอเกม (เกมสูง 60vw) ลบแถบแท็บ */
+  .chat,
+  .pomodoro,
+  .todo-panel,
+  .editor {
+    --sheet-h: max(200px, calc(50dvh - 30vw - 76px));
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    height: var(--sheet-h);
+  }
+
+  .editor {
+    bottom: 8px; /* ตอนแต่งห้องไม่มีแถบแท็บ */
+  }
+
+  .pomodoro {
+    height: auto;
+    max-height: var(--sheet-h);
+  }
+
+  .chat-list {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+
+  .item-grid {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  }
+
+  .player-card {
+    top: auto;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* มือถือแนวนอน: แท็บเป็นแถบตั้งด้านขวา แผงเปิดเป็นคอลัมน์ข้างๆ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .tabbar {
+    top: 64px;
+    bottom: auto;
+    left: auto;
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    flex-direction: column;
+    width: 64px;
+  }
+
+  .chat,
+  .pomodoro,
+  .todo-panel,
+  .editor {
+    top: 64px;
+    bottom: 8px;
+    left: auto;
+    right: calc(80px + env(safe-area-inset-right, 0px));
+    width: min(320px, 42vw);
+    height: auto;
+  }
+
+  .pomodoro {
+    bottom: auto;
+  }
+
+  .editor {
+    right: 8px;
+  }
+
+  .player-card {
+    bottom: 8px;
+  }
+}
+
+/* ---------- C: ตู้เกมงูบนมือถือ ---------- */
+/* แนวตั้ง/จอแคบ: กระดาน → ปุ่มทิศ → อันดับ (ปุ่มทิศอยู่ใกล้นิ้วโป้ง) */
+@media (max-width: 600px) {
+  .arcade-main {
+    display: contents;
+  }
+  .arcade .dpad {
+    order: 1;
+  }
+  .arcade-top {
+    order: 2;
+    width: auto;
+  }
+}
+
+/* แนวนอนเตี้ย: กระดานซ้าย ปุ่มทิศ + อันดับขวา ไม่ต้องเลื่อนจอ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .arcade {
+    display: grid;
+    grid-template-areas: 'head head' 'screen dpad' 'screen top';
+    grid-template-columns: auto 180px;
+    column-gap: 12px;
+  }
+  .arcade header {
+    grid-area: head;
+  }
+  .arcade-main {
+    display: contents;
+  }
+  .arcade-screen {
+    grid-area: screen;
+    width: min(320px, calc(100dvh - 90px));
+  }
+  .arcade .dpad {
+    grid-area: dpad;
+  }
+  .arcade-top {
+    grid-area: top;
+    width: auto;
+  }
+}
+
+/* ---------- D: จอสัมผัส = ปุ่มใหญ่พอสำหรับนิ้ว ---------- */
+@media (pointer: coarse) {
+  button {
+    min-height: 40px;
+  }
+  button.icon,
+  .todo-panel header button,
+  .arcade header button {
+    min-width: 40px;
+  }
+  .swatch {
+    width: 36px;
+    height: 36px;
+  }
+  .station-grid button,
+  .pomo-options button {
+    font-size: 14px;
+  }
+  .music-link input,
+  .todo-add input,
+  .chat input,
+  .panel input {
+    font-size: 16px; /* iPhone ซูมหน้าเองถ้าตัวอักษรในช่องพิมพ์เล็กกว่า 16px */
+  }
+}
+
+/* ---------- เลือกตัวละคร ---------- */
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: 8px;
+  background: #1d1630;
+}
+
+.character-pick {
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+  background: #3a2f55;
+}
+
+.character-pick.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  background: #5a4a85;
+}
+
+.faceset {
+  display: block;
+  border-radius: 4px;
+}

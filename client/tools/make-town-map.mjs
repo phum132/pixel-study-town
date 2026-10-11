@@ -1,132 +1,288 @@
-// สร้างแผนที่เมืองเป็นไฟล์ Tiled JSON (public/assets/maps/town.json)
-// รัน: npm run map   — คำเตือน: จะเขียนทับ town.json ถ้าแก้ใน Tiled ไปแล้วอย่ารันซ้ำ
+// สร้างแผนที่เมือง 4 ย่าน (ชุดภาพ Ninja Adventure) เป็นไฟล์ Tiled JSON: public/assets/maps/town.json
+// รัน: npm run map — คำเตือน: จะเขียนทับ town.json ถ้าแก้แผนที่ในโปรแกรม Tiled ไปแล้วอย่ารันซ้ำ
+//
+//   ┌──────────────┬──────────────┐
+//   │ 📚 ห้องสมุด    │ ☕ คาเฟ่        │
+//   ├────── ลานกลางเมือง + ตู้เกม ──────┤
+//   │ 🏠 ย่านบ้าน    │ 🌸 สวน + ทะเลสาบ │
+//   └──────────────┴──────────────┘
 import { writeFileSync } from 'node:fs';
 
-const W = 40;
-const H = 30;
+const W = 64;
+const H = 48;
 
-// เลขช่องใน tiny-town.png (นับจากซ้ายบน แถวละ 12 ช่อง เริ่มที่ 0)
-const T = {
-  grass: 0, grassTuft: 1, flowers: 2,
-  dirt: { tl: 12, t: 13, tr: 14, l: 24, c: 25, r: 26, bl: 36, b: 37, br: 38 },
-  stonePath: 43,
-  treeTop: 4, treeTrunk: 16, smallTree: 28, smallOrangeTree: 27, bush: 5, mushroom: 29,
-  fence: [44, 45, 46, 47],
-  well: 104, sign: 83, beehive: 94, target: 95,
-  houseBlue: [[48, 49, 50, 51], [60, 61, 62, 63], [84, 73, 73, 85]],
-  houseRed: [[52, 53, 54, 55], [64, 65, 66, 67], [88, 77, 77, 89]],
-};
+// ---------- ชุดภาพ (ลำดับ firstgid ต้องตรงกับ tilesets ด้านล่าง) ----------
+const SETS = [
+  { name: 'floor', file: 'TilesetFloor.png', cols: 22, rows: 26, w: 352, h: 417 },
+  { name: 'water', file: 'TilesetWater.png', cols: 28, rows: 17, w: 448, h: 272 },
+  { name: 'nature', file: 'TilesetNature.png', cols: 24, rows: 21, w: 384, h: 336 },
+  { name: 'house', file: 'TilesetHouse.png', cols: 33, rows: 23, w: 528, h: 368 },
+  { name: 'detail', file: 'TilesetFloorDetail.png', cols: 16, rows: 5, w: 256, h: 80 },
+];
+let next = 1;
+for (const s of SETS) {
+  s.firstgid = next;
+  next += s.cols * s.rows;
+}
+const SET = Object.fromEntries(SETS.map((s) => [s.name, s]));
+// gid ของช่อง (col,row) ในชุดภาพ
+const gid = (set, col, row) => SET[set].firstgid + row * SET[set].cols + col;
 
-const layer = () => new Array(W * H).fill(-1);
-const ground = layer().fill(T.grass);
-const walls = layer(); // ชนได้ เดินทะลุไม่ได้
-const above = layer(); // วาดทับตัวละคร (ยอดไม้ หลังคา)
-const reserved = new Array(W * H).fill(false); // ช่องที่ห้ามสุ่มของตกแต่งลงไป
+// ---------- ชั้นของแผนที่ ----------
+const layer = () => new Array(W * H).fill(0);
+const ground = layer(); // หญ้า ดิน น้ำ
+const deco = layer(); // ดอกไม้ หญ้าเล็กๆ (เดินทับได้)
+const walls = layer(); // ชนได้: ตัวตึก โคนต้นไม้
+const above = layer(); // วาดทับตัวละคร: หลังคา ยอดไม้
+const block = layer(); // ชนได้แต่มองไม่เห็น (น้ำ) — ซ่อนไว้ในเกม
+const used = new Array(W * H).fill(false); // ช่องที่มีของแล้ว ห้ามสุ่มของตกแต่งทับ
 
 const inMap = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
-const set = (arr, x, y, t) => { if (inMap(x, y)) arr[y * W + x] = t; };
-const reserve = (x, y, w = 1, h = 1) => {
-  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (inMap(i, j)) reserved[j * W + i] = true;
+const put = (arr, x, y, g) => inMap(x, y) && (arr[y * W + x] = g);
+const mark = (x, y, w = 1, h = 1) => {
+  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (inMap(i, j)) used[j * W + i] = true;
 };
 
-// สุ่มแบบมี seed เพื่อให้รันกี่ครั้งก็ได้แผนที่เหมือนเดิม
-let seed = 1234;
+let seed = 20261012;
 const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+const pick = (arr) => arr[Math.floor(rand() * arr.length)];
 
-// --- ป่ารอบขอบแผนที่ ---
-function tree(x, y) {
-  set(above, x, y, T.treeTop);
-  set(walls, x, y + 1, T.treeTrunk);
-  reserve(x, y, 1, 2);
-}
-for (let x = 0; x < W; x++) { tree(x, 0); tree(x, H - 3); set(walls, x, H - 1, T.bush); reserve(x, H - 1); }
-for (let y = 2; y < H - 3; y += 2) { tree(0, y); tree(W - 1, y); }
+// ---------- พื้นหญ้า ----------
+const GRASS = gid('floor', 0, 12);
+const GRASS_VARIANTS = [1, 2, 3, 4].map((c) => gid('floor', c, 12));
+for (let i = 0; i < W * H; i++) ground[i] = rand() < 0.12 ? pick(GRASS_VARIANTS) : GRASS;
 
-// --- ถนนหิน ---
-const path = (x, y) => { set(ground, x, y, T.stonePath); reserve(x, y); };
-for (let x = 2; x < W - 2; x++) { path(x, 9); path(x, 24); }
-for (let y = 9; y <= 24; y++) { path(19, y); path(20, y); }
-
-// --- ลานกลางเมือง (ดิน) ---
-const px = 14, py = 12, pw = 12, ph = 7;
-for (let y = py; y < py + ph; y++) {
-  for (let x = px; x < px + pw; x++) {
-    const top = y === py, bot = y === py + ph - 1, left = x === px, right = x === px + pw - 1;
-    const d = T.dirt;
-    const t = top ? (left ? d.tl : right ? d.tr : d.t)
-      : bot ? (left ? d.bl : right ? d.br : d.b)
-      : left ? d.l : right ? d.r : d.c;
-    set(ground, x, y, t);
+// ---------- ทางดิน (autotile) ----------
+// ดูสีของ tile แต่ละแบบที่ 8 จุด: N E S W NE SE SW NW ("#" = ดิน, "g" = หญ้า) แล้วเลือกแบบที่ตรงกับเพื่อนบ้านมากที่สุด
+// ค่าพวกนี้ได้จากการวัดสีในภาพจริง (tools ไม่ต้องรันซ้ำ)
+const DIRT_TILES = {
+  154: 'g##gg#gg', 155: 'g###g##g', 156: 'ggg#gg#g', 157: 'gg#ggggg', 158: 'g##ggggg', 159: 'g###gg#g',
+  160: 'g###g#gg', 161: 'gg##gggg', 162: 'g###gggg', 163: '####g#g#', 176: '###g##gg', 177: '########',
+  178: '#g##gg##', 179: '#g#ggggg', 180: '###g#ggg', 181: '#####g##', 182: '######g#', 183: '#g##ggg#',
+  184: '#####gg#', 185: '#####g#g', 198: '##gg#ggg', 199: '##g##gg#', 200: '#gggggg#', 201: '#ggggggg',
+  202: '###gg#gg', 203: '####g###', 204: '#######g', 205: '#g##gg#g', 206: '####g##g', 207: '####g#gg',
+  220: 'g#gggggg', 221: 'g#g#gggg', 222: 'ggg#gggg', 223: 'gggggggg', 224: '##gggggg', 225: '##g#ggg#',
+  226: '##g##ggg', 227: '#gg#gggg', 228: '##g#gggg', 229: '#####ggg',
+};
+const dirt = new Array(W * H).fill(false);
+const isDirt = (x, y) => inMap(x, y) && dirt[y * W + x];
+const paveRect = (x, y, w, h) => {
+  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (inMap(i, j)) dirt[j * W + i] = true;
+  mark(x, y, w, h);
+};
+function applyDirt() {
+  const entries = Object.entries(DIRT_TILES);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (!isDirt(x, y)) continue;
+      const n = isDirt(x, y - 1), e = isDirt(x + 1, y), s = isDirt(x, y + 1), w = isDirt(x - 1, y);
+      const want = [
+        n, e, s, w,
+        n && e && isDirt(x + 1, y - 1), s && e && isDirt(x + 1, y + 1),
+        s && w && isDirt(x - 1, y + 1), n && w && isDirt(x - 1, y - 1),
+      ].map((d) => (d ? '#' : 'g')).join('');
+      let best = 177, bestScore = -1;
+      for (const [idx, sig] of entries) {
+        let score = 0;
+        for (let k = 0; k < 8; k++) if (sig[k] === want[k]) score += k < 4 ? 2 : 1; // ขอบสำคัญกว่ามุม
+        if (score > bestScore) [best, bestScore] = [+idx, score];
+      }
+      ground[y * W + x] = SET.floor.firstgid + best;
+    }
   }
 }
-reserve(px - 1, py - 1, pw + 2, ph + 2);
-set(walls, 22, 14, T.well);
-set(walls, 16, 13, T.sign);
 
-// --- บ้าน 4 หลัง (ประตูอยู่ช่องขวาสุดของแถวล่าง) ---
-const doors = []; // ตำแหน่งประตู: เดินชนจากด้านล่าง = เข้าบ้านตัวเอง
-function house(x, y, tiles) {
-  tiles.forEach((row, j) => row.forEach((t, i) => set(j === 0 ? above : walls, x + i, y + j, t)));
-  // หลังคาแถวบนวาดทับตัวละคร แต่ยังต้องชน จึงใส่กำแพงล่องหนใต้มันด้วย
-  for (let i = 0; i < 4; i++) set(walls, x + i, y, tiles[1][i]);
-  reserve(x - 1, y - 1, 6, 5);
-  doors.push({ x: (x + 3) * 16, y: (y + 3) * 16 - 2, width: 16, height: 10 });
-  for (let yy = y + 3; yy < (y < 15 ? 9 : 24); yy++) path(x + 3, yy); // ทางเดินจากประตูไปถนน
+// ---------- ทะเลสาบ (ชุดน้ำ 3x3: มุม ขอบ กลาง) ----------
+function lake(x, y, w, h) {
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const col = i === 0 ? 0 : i === w - 1 ? 2 : 1;
+      const row = j === 0 ? 6 : j === h - 1 ? 8 : 7;
+      put(ground, x + i, y + j, gid('water', col, row));
+      // ขอบนอกสุดเป็นตลิ่ง เดินได้นิดหน่อย ส่วนข้างในชน
+      if (i > 0 && j > 0 && i < w - 1 && j < h - 1) put(block, x + i, y + j, GRASS);
+    }
+  }
+  mark(x - 1, y - 1, w + 2, h + 2);
 }
-house(5, 5, T.houseBlue);
-house(30, 5, T.houseRed);
-house(5, 20, T.houseRed);
-house(30, 20, T.houseBlue);
 
-// --- รั้วกับฟาร์มผึ้งมุมขวา ---
-for (let x = 27; x <= 34; x++) set(walls, x, 15, T.fence[x === 27 ? 0 : x === 34 ? 2 : 1]);
-set(walls, 29, 13, T.beehive);
-set(walls, 32, 13, T.beehive);
-set(walls, 9, 14, T.target);
-reserve(26, 12, 10, 5);
-reserve(8, 13, 3, 3);
+// ---------- ตึก: (col,row) ซ้ายบนในชุด house, กว้าง x สูง, ประตูอยู่คอลัมน์ไหน (นับจากซ้าย) ----------
+const BUILDINGS = {
+  houseOrange: { col: 0, row: 0, w: 4, h: 3, door: 1 },
+  houseBeige: { col: 4, row: 0, w: 4, h: 3, door: 1 },
+  houseOrange2: { col: 8, row: 0, w: 4, h: 3, door: 1 },
+  temple: { col: 12, row: 0, w: 4, h: 3, door: 1 },
+  ramen: { col: 16, row: 0, w: 3, h: 3, door: 1 },
+  teaHouse: { col: 19, row: 0, w: 4, h: 3, door: 2 },
+  shrine: { col: 23, row: 0, w: 3, h: 3, door: 1 },
+  woodHouse: { col: 26, row: 0, w: 3, h: 3, door: 1 },
+};
+const doors = []; // ประตูบ้าน: เดินชนจากด้านล่าง = เข้าบ้านตัวเอง
 
-// --- ของตกแต่งแบบสุ่ม ---
-for (let y = 2; y < H - 3; y++) {
-  for (let x = 1; x < W - 1; x++) {
+function building(kind, x, y, { isHome = false } = {}) {
+  const b = BUILDINGS[kind];
+  for (let j = 0; j < b.h; j++) {
+    for (let i = 0; i < b.w; i++) {
+      const g = gid('house', b.col + i, b.row + j);
+      if (j === 0) put(above, x + i, y + j, g); // แถวบนสุดของหลังคา: ตัวละครเดินไปยืนข้างหลังได้
+      else put(walls, x + i, y + j, g);
+    }
+  }
+  for (let i = 0; i < b.w; i++) put(block, x + i, y, GRASS); // หลังคาแถวบนก็ยังเดินทะลุไม่ได้
+  mark(x - 1, y - 1, b.w + 2, b.h + 2);
+  const dx = x + b.door;
+  if (isHome) doors.push({ x: dx * 16, y: (y + b.h) * 16 - 2, width: 16, height: 10 });
+  return { doorX: dx, bottom: y + b.h };
+}
+
+// ---------- ต้นไม้ ----------
+// ต้นไม้ขนาด 2x2 ในชุด nature แถวแรก: เลขคอลัมน์ซ้ายของแต่ละต้น
+const TREE = { green: 0, darkGreen: 2, dead: 4, leafy: 6, white: 12, pink: 14, lime: 16, lime2: 18 };
+const FOREST = [TREE.green, TREE.darkGreen, TREE.lime, TREE.lime2];
+// แถวบน (พุ่มใบ) วาดทับตัวละคร แถวล่าง (ลำต้น) เดินชน
+function smallTree(x, y, col = pick(FOREST)) {
+  for (let i = 0; i < 2; i++) {
+    put(above, x + i, y, gid('nature', col + i, 0));
+    put(walls, x + i, y + 1, gid('nature', col + i, 1));
+  }
+  mark(x, y, 2, 2);
+}
+const isFree = (x, y, w, h) => {
+  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (!inMap(i, j) || used[j * W + i]) return false;
+  return true;
+};
+// ต้นไม้ใหญ่ 3x3: สองแถวบนเป็นพุ่มใบ (ทับตัวละคร) แถวล่างเป็นลำต้น (ชน)
+const BIG_TREES = { pink: 0, green: 3, white: 6, orange: 9 };
+function bigTree(kind, x, y) {
+  const c0 = BIG_TREES[kind];
+  for (let j = 0; j < 3; j++) {
+    for (let i = 0; i < 3; i++) {
+      const g = gid('nature', c0 + i, 18 + j);
+      put(j < 2 ? above : walls, x + i, y + j, g);
+    }
+  }
+  put(walls, x + 1, y + 2, gid('nature', c0 + 1, 20));
+  mark(x - 1, y - 1, 5, 5);
+}
+
+// =========================================================
+// วางเมือง
+// =========================================================
+
+// ป่าล้อมรอบ (ต้นไม้ 2x2 เรียงชิดกัน)
+for (let x = 0; x < W; x += 2) {
+  smallTree(x, 0);
+  smallTree(x, H - 2);
+}
+for (let y = 2; y < H - 2; y += 2) {
+  smallTree(0, y);
+  smallTree(W - 2, y);
+}
+
+// ลานกลางเมือง + ถนนหลัก 4 ทิศ (กว้าง 2 ช่อง)
+const PLAZA = { x: 26, y: 19, w: 12, h: 10 };
+paveRect(PLAZA.x, PLAZA.y, PLAZA.w, PLAZA.h);
+paveRect(31, 4, 2, PLAZA.y - 4); // ขึ้นเหนือ
+paveRect(31, PLAZA.y + PLAZA.h, 2, H - 4 - PLAZA.y - PLAZA.h); // ลงใต้
+paveRect(4, 23, PLAZA.x - 4, 2); // ไปตะวันตก
+paveRect(PLAZA.x + PLAZA.w, 23, W - 4 - PLAZA.x - PLAZA.w, 2); // ไปตะวันออก
+
+// ---- 📚 ย่านห้องสมุด (ตะวันตกเฉียงเหนือ): วัดเงียบๆ + ศาลเจ้า ล้อมด้วยต้นสน ----
+const library = building('temple', 12, 8);
+paveRect(library.doorX, library.bottom, 1, 23 - library.bottom);
+const shrine = building('shrine', 20, 9);
+paveRect(shrine.doorX, shrine.bottom, 1, 23 - shrine.bottom);
+for (const [x, y] of [[5, 5], [7, 5], [5, 8], [5, 12], [7, 15], [25, 5], [27, 7], [9, 17], [17, 16], [24, 16]]) {
+  smallTree(x, y, TREE.darkGreen);
+}
+
+// ---- ☕ ย่านคาเฟ่ (ตะวันออกเฉียงเหนือ): ร้านน้ำชา + ร้านราเมน ----
+const tea = building('teaHouse', 40, 9);
+paveRect(tea.doorX, tea.bottom, 1, 23 - tea.bottom);
+const ramen = building('ramen', 48, 9);
+paveRect(ramen.doorX, ramen.bottom, 1, 23 - ramen.bottom);
+bigTree('orange', 55, 6);
+for (const [x, y] of [[37, 5], [39, 15], [46, 16], [53, 16], [58, 12], [44, 5]]) smallTree(x, y);
+
+// ---- 🏠 ย่านบ้าน (ตะวันตกเฉียงใต้): 6 หลัง ประตูทุกหลัง = บ้านของเรา ----
+const homes = [
+  ['houseOrange', 6, 28], ['houseBeige', 13, 28], ['woodHouse', 20, 28],
+  ['houseBeige', 6, 36], ['houseOrange2', 13, 36], ['houseOrange', 20, 36],
+];
+paveRect(4, 33, 24, 1); // ถนนซอยระหว่างแถวบ้าน
+paveRect(4, 41, 24, 1);
+paveRect(4, 25, 1, 17); // เชื่อมซอยกับถนนหลัก
+for (const [kind, x, y] of homes) {
+  const h = building(kind, x, y, { isHome: true });
+  paveRect(h.doorX, h.bottom, 1, (y < 33 ? 33 : 41) - h.bottom);
+}
+
+// ---- 🌸 สวน + ทะเลสาบ (ตะวันออกเฉียงใต้) ----
+lake(44, 31, 13, 9);
+bigTree('pink', 39, 30);
+bigTree('pink', 58, 32);
+bigTree('green', 39, 38);
+for (const [x, y] of [[43, 42], [47, 42], [51, 42], [55, 42], [59, 28], [42, 27], [50, 27]]) smallTree(x, y, TREE.pink);
+paveRect(PLAZA.x + PLAZA.w, 27, 4, 1); // ทางเดินเล่นจากลานไปสวน
+paveRect(41, 27, 1, 3);
+
+// ---------- ป้ายย่าน (ชื่อลอยในเกม) + ตู้เกม + จุดเกิด ----------
+const labels = [
+  { name: 'label', text: '📚 ย่านห้องสมุด', x: 16 * 16, y: 6 * 16 },
+  { name: 'label', text: '☕ ย่านคาเฟ่', x: 46 * 16, y: 7 * 16 },
+  { name: 'label', text: '🏠 ย่านบ้าน', x: 16 * 16, y: 26.5 * 16 },
+  { name: 'label', text: '🌸 สวนทะเลสาบ', x: 50 * 16, y: 29.5 * 16 },
+];
+const arcade = { x: (PLAZA.x + PLAZA.w - 2) * 16, y: (PLAZA.y + 1) * 16 };
+mark(PLAZA.x + PLAZA.w - 2, PLAZA.y + 1);
+
+applyDirt();
+
+// ---------- ของตกแต่งแบบสุ่ม (หญ้าเล็ก ดอกไม้) บนพื้นหญ้าที่ว่าง ----------
+const TUFTS = [0, 1, 2, 3, 4, 5, 6, 7].map((c) => gid('detail', c, 2));
+for (let y = 2; y < H - 2; y++) {
+  for (let x = 2; x < W - 2; x++) {
     const i = y * W + x;
-    if (reserved[i]) continue;
+    if (used[i]) continue;
     const r = rand();
-    if (r < 0.04) { set(walls, x, y, rand() < 0.7 ? T.smallTree : T.smallOrangeTree); reserve(x - 1, y - 1, 3, 3); }
-    else if (r < 0.06) set(walls, x, y, T.bush);
-    else if (r < 0.07) set(walls, x, y, T.mushroom);
-    else if (r < 0.15) set(ground, x, y, T.grassTuft);
-    else if (r < 0.2) set(ground, x, y, T.flowers);
+    if (r < 0.012 && isFree(x - 1, y - 1, 4, 4)) smallTree(x, y);
+    else if (r < 0.09) deco[i] = pick(TUFTS);
   }
 }
 
-// --- แปลงเป็นรูปแบบ Tiled (gid = เลขช่อง + 1, 0 = ว่าง) ---
-const tileLayer = (id, name, arr) => ({
-  id, name, type: 'tilelayer', width: W, height: H, x: 0, y: 0, opacity: 1, visible: true,
-  data: arr.map((t) => t + 1),
+// ---------- เขียนไฟล์ Tiled ----------
+const tileLayer = (id, name, data, visible = true) => ({
+  id, name, type: 'tilelayer', width: W, height: H, x: 0, y: 0, opacity: 1, visible, data,
 });
+let objId = 1;
+const obj = (o) => ({ id: objId++, type: '', width: 0, height: 0, rotation: 0, visible: true, ...o });
 
 const map = {
   type: 'map', version: '1.10', tiledversion: '1.11.0', orientation: 'orthogonal', renderorder: 'right-down',
   width: W, height: H, tilewidth: 16, tileheight: 16, infinite: false, compressionlevel: -1,
-  nextlayerid: 5, nextobjectid: 6,
+  nextlayerid: 7,
   layers: [
     tileLayer(1, 'ground', ground),
-    tileLayer(2, 'walls', walls),
-    tileLayer(3, 'above', above),
+    tileLayer(2, 'deco', deco),
+    tileLayer(3, 'walls', walls),
+    tileLayer(4, 'above', above),
+    tileLayer(5, 'block', block, false),
     {
-      id: 4, name: 'objects', type: 'objectgroup', x: 0, y: 0, opacity: 1, visible: true, draworder: 'topdown',
+      id: 6, name: 'objects', type: 'objectgroup', x: 0, y: 0, opacity: 1, visible: true, draworder: 'topdown',
       objects: [
-        { id: 1, name: 'spawn', type: '', x: 19.5 * 16, y: 16 * 16, width: 0, height: 0, point: true, rotation: 0, visible: true },
-        ...doors.map((d, n) => ({ id: 2 + n, name: 'door', type: '', ...d, rotation: 0, visible: true })),
+        obj({ name: 'spawn', x: (PLAZA.x + PLAZA.w / 2) * 16, y: (PLAZA.y + PLAZA.h / 2) * 16, point: true }),
+        ...doors.map((d) => obj({ name: 'door', ...d })),
+        obj({ name: 'arcade', ...arcade, width: 16, height: 16 }),
+        ...labels.map((l) => obj({ name: 'label', x: l.x, y: l.y, point: true, properties: [{ name: 'text', type: 'string', value: l.text }] })),
       ],
     },
   ],
-  tilesets: [{
-    firstgid: 1, name: 'tiny-town', image: '../tiles/tiny-town.png', imagewidth: 192, imageheight: 176,
-    columns: 12, tilecount: 132, tilewidth: 16, tileheight: 16, margin: 0, spacing: 0,
-  }],
+  tilesets: SETS.map((s) => ({
+    firstgid: s.firstgid, name: s.name, image: `../tiles/ninja/${s.file}`, imagewidth: s.w, imageheight: s.h,
+    columns: s.cols, tilecount: s.cols * s.rows, tilewidth: 16, tileheight: 16, margin: 0, spacing: 0,
+  })),
 };
+map.nextobjectid = objId;
 
 writeFileSync(new URL('../public/assets/maps/town.json', import.meta.url), JSON.stringify(map));
-console.log(`สร้าง town.json แล้ว (${W}x${H} ช่อง)`);
+console.log(`สร้าง town.json แล้ว (${W}x${H} ช่อง, บ้าน ${doors.length} หลัง)`);

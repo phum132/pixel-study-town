@@ -1,38 +1,29 @@
 import { useEffect, useRef } from 'react';
-import { drawCharacterSheet, type CharacterColors } from '../game/character';
+import { DIR_COLUMN, sheetUrl } from '../lib/characters';
 
-const WALK = [1, 0, 2, 0];
-const DIR_START = [0, 6, 3, 6]; // หน้า → ขวา → หลัง → ซ้าย (หมุนโชว์รอบตัว)
+const TURN = [DIR_COLUMN.down, DIR_COLUMN.right, DIR_COLUMN.up, DIR_COLUMN.left]; // หมุนโชว์รอบตัว
 
-// แสดงตัวละครเดินอยู่กับที่ หมุนทิศทุก 2 วินาที
-export function CharacterPreview({ colors, scale = 6 }: { colors: CharacterColors; scale?: number }) {
+// ตัวละครเดินอยู่กับที่ หมุนทิศทุก 2 วินาที (ใช้ในหน้าเลือกตัวละคร)
+export function CharacterPreview({ character, scale = 6 }: { character: string; scale?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const sheet = document.createElement('canvas');
-    sheet.width = 16 * 9;
-    sheet.height = 16;
-    drawCharacterSheet(sheet.getContext('2d')!, colors);
-
+    const img = new Image();
+    img.src = sheetUrl(character);
     const ctx = ref.current!.getContext('2d')!;
     let tick = 0;
     const draw = () => {
-      const dir = Math.floor(tick / 16) % 4;
-      const frame = DIR_START[dir] + WALK[tick % 4];
-      ctx.save();
+      if (!img.complete) return;
+      const col = TURN[Math.floor(tick / 16) % 4];
+      const row = tick % 4;
       ctx.clearRect(0, 0, 16, 16);
-      if (dir === 3) {
-        ctx.translate(16, 0);
-        ctx.scale(-1, 1);
-      }
-      ctx.drawImage(sheet, frame * 16, 0, 16, 16, 0, 0, 16, 16);
-      ctx.restore();
+      ctx.drawImage(img, col * 16, row * 16, 16, 16, 0, 0, 16, 16);
       tick++;
     };
-    draw();
+    img.onload = draw;
     const id = setInterval(draw, 125);
     return () => clearInterval(id);
-  }, [colors]);
+  }, [character]);
 
   return <canvas ref={ref} width={16} height={16} className="pixel" style={{ width: 16 * scale, height: 16 * scale }} />;
 }

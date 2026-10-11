@@ -6,8 +6,8 @@ import { WorldRoom } from './WorldRoom.js';
 // หนึ่งห้อง = เมืองของหนึ่งคอมมู (คนเกิน 50 จะเปิดห้องใหม่ของคอมมูเดิมให้อัตโนมัติ)
 export class TownRoom extends WorldRoom {
   maxClients = MAX_PLAYERS_PER_ROOM;
-  // ต้องตรงกับแผนที่ town.json (40x30 ช่อง ช่องละ 16px)
-  protected world = { width: 40 * 16, height: 30 * 16, spawn: { x: 19.5 * 16, y: 16 * 16 }, spread: { x: 48, y: 24 } };
+  // ต้องตรงกับแผนที่ town.json (64x48 ช่อง ช่องละ 16px, เกิดกลางลานเมือง) ดู client/tools/make-town-map.mjs
+  protected world = { width: 64 * 16, height: 48 * 16, spawn: { x: 32 * 16, y: 24 * 16 }, spread: { x: 64, y: 32 } };
 
   onCreate(options: { community?: string }) {
     this.setMetadata({ community: options.community });

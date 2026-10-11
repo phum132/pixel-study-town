@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import { FOCUS_OPTIONS, type FocusApi } from '../lib/focus';
-
-function mmss(ms: number) {
-  const total = Math.ceil(ms / 1000);
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-}
+import { FOCUS_OPTIONS, mmss, type FocusApi } from '../lib/focus';
 
 // นาฬิกา Pomodoro มุมขวาบน: เลือกเวลา → เริ่มโฟกัส → ครบแล้วพัก 5 นาที
 export function PomodoroTimer({ focus }: { focus: FocusApi }) {

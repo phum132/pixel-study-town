@@ -66,8 +66,10 @@ export default function App() {
   if (!session) return <AuthScreen />;
   if (profile === undefined) return <Message text="กำลังโหลดโปรไฟล์..." />;
 
+  // เครื่องเล่นเพลงอยู่นอกทุกหน้าจอ เพลงจึงเล่นต่อได้ตอนแต่งตัว เปลี่ยนคอมมู หรือเดินระหว่างเมืองกับบ้าน
+  let screen;
   if (!profile || editing) {
-    return (
+    screen = (
       <ProfileEditor
         userId={session.user.id}
         profile={profile}
@@ -78,20 +80,16 @@ export default function App() {
         onCancel={profile ? () => setEditing(false) : undefined}
       />
     );
-  }
-
-  if (!target) {
-    return (
+  } else if (!target) {
+    screen = (
       <CommunityPicker
         onPick={goTown}
         onEditProfile={() => setEditing(true)}
         onSignOut={() => supabase.auth.signOut()}
       />
     );
-  }
-
-  return (
-    <>
+  } else {
+    screen = (
       <WorldView
         key={target.kind === 'town' ? `town-${target.communityId}` : `home-${target.ownerId}`}
         profile={profile}
@@ -103,8 +101,13 @@ export default function App() {
         focus={focus}
         onHomeMusic={setHomeMusic}
       />
-      {/* อยู่นอก WorldView เพลงจึงเล่นต่อได้ตอนเดินระหว่างเมืองกับบ้าน */}
-      <MusicPlayer homeMusic={homeMusic} />
+    );
+  }
+
+  return (
+    <>
+      {screen}
+      {profile && <MusicPlayer homeMusic={homeMusic} />}
     </>
   );
 }

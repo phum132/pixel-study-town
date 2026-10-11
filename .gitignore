@@ -3,4 +3,6 @@ dist/
 .env
 .env.*
 !.env.example
-kenney_tiny-town/
+
+# ชุดภาพต้นฉบับที่ดาวน์โหลดมา (ภาพที่เกมใช้จริงคัดลอกไว้ใน client/public/assets แล้ว)
+asset-packs/

@@ -36,8 +36,19 @@ export function MusicPlayer({ homeMusic }: Props) {
   const [link, setLink] = useState('');
   const [error, setError] = useState('');
   const [hasPlayer, setHasPlayer] = useState(false);
+  const [loading, setLoading] = useState(false); // กดสถานีแรกแล้ว รอ YouTube โหลด
 
   useEffect(() => () => playerRef.current?.destroy(), []);
+
+  // เปิดตู้เกมบนจอเล็ก: หน้าต่างเกมจะบังวิดีโอ จึงหยุดเพลงไว้ก่อน (กฎ YouTube ห้ามบังวิดีโอระหว่างเล่น)
+  useEffect(() => {
+    const onArcade = (e: Event) => {
+      const small = window.matchMedia('(max-width: 1023px), (max-height: 500px)').matches;
+      if ((e as CustomEvent<boolean>).detail && small) playerRef.current?.pauseVideo();
+    };
+    window.addEventListener('pst-arcade', onArcade);
+    return () => window.removeEventListener('pst-arcade', onArcade);
+  }, []);
 
   async function play(key: string) {
     const station = resolveStation(key);
@@ -48,6 +59,7 @@ export function MusicPlayer({ homeMusic }: Props) {
       playerRef.current.loadVideoById(station.videoId);
       return;
     }
+    setLoading(true);
     try {
       const YT = await loadYouTubeApi();
       // YouTube จะแทนที่ div นี้ด้วย iframe จึงสร้าง div แยกไว้ข้างในกล่องที่ React ดูแล
@@ -60,6 +72,7 @@ export function MusicPlayer({ homeMusic }: Props) {
         playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
         events: {
           onReady: () => {
+            setLoading(false);
             player.setVolume(volumeRef.current);
             player.playVideo();
           },
@@ -74,6 +87,7 @@ export function MusicPlayer({ homeMusic }: Props) {
       setHasPlayer(true);
       setHasPlayer(true);
     } catch (err) {
+      setLoading(false);
       setError(err instanceof Error ? err.message : String(err));
     }
   }
@@ -107,7 +121,7 @@ export function MusicPlayer({ homeMusic }: Props) {
   const showVideo = hasPlayer && (playing || open);
 
   return (
-    <section className={`music ${open ? 'open' : ''}`}>
+    <section className={`music ${open ? 'open' : ''} ${playing ? 'playing' : ''}`}>
       <div className="music-bar">
         <button onClick={() => setOpen(!open)} title="เลือกสถานีเพลง">
           🎵 {station ? `${station.emoji} ${station.name}` : 'เพลง lofi'} {open ? '▴' : '▾'}
@@ -155,6 +169,7 @@ export function MusicPlayer({ homeMusic }: Props) {
           </label>
         </div>
       )}
+      {loading && <small className="music-loading">กำลังโหลดเพลง... 🎵</small>}
       {error && <small className="error">{error}</small>}
     </section>
   );

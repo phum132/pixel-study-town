@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { createCharacterTexture, DEFAULT_COLORS, type CharacterColors } from './character';
+import { ensureWalkAnims, textureKey } from './character';
+import { DIR_COLUMN } from '../lib/characters';
 
 export type Dir = 'down' | 'up' | 'left' | 'right';
 const BUBBLE_MS = 5000;
@@ -15,11 +16,11 @@ export class Avatar {
   private name: string;
   private focusing = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, name: string, colors: CharacterColors) {
+  // character = ชื่อตัวละครใน lib/characters.ts (แผ่นภาพโหลดไว้แล้วใน preload ของฉาก)
+  constructor(scene: Phaser.Scene, x: number, y: number, name: string, character: string) {
     this.scene = scene;
-    // ใช้สีเป็นชื่อภาพ คนที่แต่งตัวเหมือนกันจะใช้ภาพร่วมกัน ไม่ต้องวาดซ้ำ
-    this.textureKey = 'av-' + Object.values(colors).join('').replace(/#/g, '');
-    createCharacterTexture(scene, this.textureKey, colors);
+    this.textureKey = textureKey(character);
+    ensureWalkAnims(scene, character);
     this.sprite = scene.physics.add.sprite(x, y, this.textureKey, 0);
     this.name = name;
     this.nameTag = makeLabel(scene, name, '#ffffff').setOrigin(0.5, 1);
@@ -32,15 +33,13 @@ export class Avatar {
     this.nameTag.setText(on ? `📖 ${this.name}` : this.name).setColor(on ? '#ffcf5c' : '#ffffff');
   }
 
+  // แผ่นภาพมีครบทั้ง 4 ทิศ (ไม่ต้องกลับด้านภาพ) ยืนนิ่ง = เฟรมแรกของทิศนั้น
   setPose(dir: Dir, moving: boolean) {
-    const side = dir === 'left' || dir === 'right';
-    this.sprite.setFlipX(dir === 'left');
-    const anim = side ? 'side' : dir;
     if (moving) {
-      this.sprite.anims.play(`${this.textureKey}-walk-${anim}`, true);
+      this.sprite.anims.play(`${this.textureKey}-walk-${dir}`, true);
     } else {
       this.sprite.anims.stop();
-      this.sprite.setFrame({ down: 0, up: 3, side: 6 }[anim]);
+      this.sprite.setFrame(DIR_COLUMN[dir]);
     }
   }
 
@@ -89,10 +88,3 @@ export function makeLabel(scene: Phaser.Scene, text: string, color: string, styl
   return label;
 }
 
-export function parseColors(json: string): CharacterColors {
-  try {
-    return { ...DEFAULT_COLORS, ...JSON.parse(json) };
-  } catch {
-    return DEFAULT_COLORS;
-  }
-}

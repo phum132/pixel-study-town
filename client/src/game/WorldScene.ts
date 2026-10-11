@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { getStateCallbacks, type Room } from 'colyseus.js';
-import { DEFAULT_COLORS, type CharacterColors } from './character';
-import { Avatar, parseColors, type Dir } from './avatar';
+import { preloadCharacters } from './character';
+import { Avatar, type Dir } from './avatar';
+import { parseAvatar } from '../lib/characters';
 import type { ChatMessage } from '../lib/colyseus';
 import type { HomeData } from '../lib/home';
 
@@ -13,7 +14,7 @@ type NetPlayer = { userId: string; name: string; avatar: string; x: number; y: n
 // ข้อมูลที่ React ส่งให้ฉากตอนเริ่ม
 // bridge = ช่องทางคุยกันระหว่างเกมกับ React เช่น เกมบอก "กดตัวละครคนนี้" แล้ว React เปิดการ์ดโปรไฟล์
 export type WorldInit = {
-  colors: CharacterColors;
+  character: string;
   name: string;
   room: Room;
   bridge: Phaser.Events.EventEmitter;
@@ -36,6 +37,7 @@ export abstract class WorldScene extends Phaser.Scene {
   protected me!: Avatar;
   protected dir: Dir = 'down';
   protected pointerWalk = true; // ปิดตอนแต่งห้อง เพราะใช้เมาส์วางของแทน
+  protected inputLocked = false; // เปิดหน้าต่างเกมอยู่ (ปุ่มลูกศรใช้บังคับงูแทน ตัวละครต้องไม่เดิน)
   protected initData!: WorldInit;
   private others = new Map<string, Avatar>();
   private keys!: Record<'up' | 'down' | 'left' | 'right' | 'w' | 'a' | 's' | 'd', Phaser.Input.Keyboard.Key>;
@@ -49,13 +51,18 @@ export abstract class WorldScene extends Phaser.Scene {
   }
 
   protected abstract buildWorld(): WorldSetup;
+
+  // ฉากลูกเรียก super.preload() แล้วโหลดของตัวเองต่อ
+  preload() {
+    preloadCharacters(this);
+  }
   protected afterUpdate(): void {}
 
   create() {
     const setup = this.buildWorld();
-    const { colors = DEFAULT_COLORS, name } = this.initData;
+    const { character, name } = this.initData;
 
-    this.me = new Avatar(this, setup.width / 2, setup.height / 2, name, colors);
+    this.me = new Avatar(this, setup.width / 2, setup.height / 2, name, character);
     const sprite = this.me.sprite;
     // ให้ชนเฉพาะช่วงเท้า ตัวละครจะเดินชิดของได้ดูเป็นธรรมชาติ
     sprite.body!.setSize(10, 5).setOffset(3, 11);
@@ -82,6 +89,9 @@ export abstract class WorldScene extends Phaser.Scene {
     };
 
     this.connectRoom();
+    this.listen('input-lock', (locked: boolean) => {
+      this.inputLocked = locked;
+    });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribers.forEach((off) => off()));
   }
 
@@ -102,7 +112,7 @@ export abstract class WorldScene extends Phaser.Scene {
           this.lastSent = { ...this.lastSent, x: p.x, y: p.y };
           return;
         }
-        const other = new Avatar(this, p.x, p.y, p.name, parseColors(p.avatar));
+        const other = new Avatar(this, p.x, p.y, p.name, parseAvatar(p.avatar).character);
         other.setPose(p.dir, p.moving);
         // กดที่ตัวละครคนอื่น → React เปิดการ์ด (ไปส่องบ้านได้)
         other.sprite.setInteractive({ useHandCursor: true });
@@ -143,9 +153,14 @@ export abstract class WorldScene extends Phaser.Scene {
     this.afterUpdate();
   }
 
+  // กำลังพิมพ์ในช่องแชท/ฟอร์ม หรือเปิดหน้าต่างเกมอยู่ = ปุ่มคีย์บอร์ดไม่ใช่ของตัวละคร
+  protected isTyping() {
+    return this.inputLocked || ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '');
+  }
+
   private moveMe() {
     const sprite = this.me.sprite;
-    const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '');
+    const typing = this.isTyping();
     const k = this.keys;
     let dx = 0;
     let dy = 0;
@@ -156,7 +171,7 @@ export abstract class WorldScene extends Phaser.Scene {
 
     // มือถือ/เมาส์: กดค้างแล้วเดินไปทางนิ้ว
     const pointer = this.input.activePointer;
-    if (this.pointerWalk && dx === 0 && dy === 0 && pointer.isDown) {
+    if (this.pointerWalk && !this.inputLocked && dx === 0 && dy === 0 && pointer.isDown) {
       const ox = pointer.worldX - sprite.x;
       const oy = pointer.worldY - sprite.y;
       if (Math.hypot(ox, oy) > 6) {

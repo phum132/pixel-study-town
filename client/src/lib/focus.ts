@@ -7,6 +7,12 @@ import { supabase } from './supabase';
 export const FOCUS_OPTIONS = import.meta.env.DEV ? [25, 50, 15, 1] : [25, 50, 15]; // 1 นาที = โหมดทดสอบ (เฉพาะตอนพัฒนา)
 export const BREAK_MINUTES = 5;
 
+// มิลลิวินาที → "MM:SS"
+export function mmss(ms: number) {
+  const total = Math.ceil(ms / 1000);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
 type ServerFocus = { started_at: string; planned_minutes: number; now: string };
 type FocusResult = { minutes: number; completed: boolean };
 

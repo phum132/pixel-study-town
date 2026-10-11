@@ -14,10 +14,12 @@ export function ChatBox({ room, messages }: { room: Room; messages: ChatMessage[
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, open]);
 
-  // กด Enter ที่ไหนก็ได้ = เปิดช่องพิมพ์
+  // กด Enter ตอนเดินอยู่ = เปิดช่องพิมพ์แชท (ถ้ากำลังพิมพ์ช่องอื่นอยู่ เช่น เพิ่มงาน ปล่อยให้ช่องนั้นใช้ Enter เอง)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && document.activeElement !== inputRef.current) {
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
+      if (e.key === 'Enter' && !typing) {
         e.preventDefault();
         setOpen(true);
         setTimeout(() => inputRef.current?.focus());
