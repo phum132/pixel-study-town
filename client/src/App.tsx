@@ -1,19 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from './lib/supabase';
 import { fetchProfile, type Profile } from './lib/profile';
 import { AuthScreen } from './ui/AuthScreen';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { CommunityPicker } from './ui/CommunityPicker';
-import { GameView } from './ui/GameView';
+import { WorldView, type WorldTarget } from './ui/WorldView';
 
-// ลำดับหน้าจอ: ล็อกอิน → สร้างตัวละคร (ครั้งแรก) → เลือกคอมมู → เข้าเมือง
+// ลำดับหน้าจอ: ล็อกอิน → สร้างตัวละคร (ครั้งแรก) → เลือกคอมมู → เข้าเมือง ⇄ บ้าน
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   // จำไว้ด้วยว่าโปรไฟล์ที่โหลดมาเป็นของบัญชีไหน กันข้อมูลบัญชีเก่าค้างตอนสลับบัญชี
   const [loaded, setLoaded] = useState<{ userId: string; profile: Profile | null; error?: string } | null>(null);
   const [editing, setEditing] = useState(false);
-  const [communityId, setCommunityId] = useState<string | null>(null);
+  // ตอนนี้อยู่ที่ไหน (null = หน้าเลือกคอมมู) และคอมมูล่าสุด (ไว้กลับจากบ้าน)
+  const [target, setTarget] = useState<WorldTarget | null>(null);
+  const [lastCommunity, setLastCommunity] = useState<string | null>(null);
+
+  const goTown = useCallback((communityId: string) => {
+    setLastCommunity(communityId);
+    setTarget({ kind: 'town', communityId });
+  }, []);
+  const visitHome = useCallback((ownerId: string) => setTarget({ kind: 'home', ownerId }), []);
+  const leaveHome = useCallback(
+    () => setTarget(lastCommunity ? { kind: 'town', communityId: lastCommunity } : null),
+    [lastCommunity],
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -64,10 +76,10 @@ export default function App() {
     );
   }
 
-  if (!communityId) {
+  if (!target) {
     return (
       <CommunityPicker
-        onPick={setCommunityId}
+        onPick={goTown}
         onEditProfile={() => setEditing(true)}
         onSignOut={() => supabase.auth.signOut()}
       />
@@ -75,12 +87,14 @@ export default function App() {
   }
 
   return (
-    <GameView
-      key={communityId}
+    <WorldView
+      key={target.kind === 'town' ? `town-${target.communityId}` : `home-${target.ownerId}`}
       profile={profile}
-      communityId={communityId}
-      onExit={() => setCommunityId(null)}
+      target={target}
+      onPickCommunity={() => setTarget(null)}
       onEditProfile={() => setEditing(true)}
+      onVisitHome={visitHome}
+      onLeaveHome={leaveHome}
     />
   );
 }

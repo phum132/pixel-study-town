@@ -316,3 +316,104 @@ button.primary {
     bottom: 8px;
   }
 }
+
+/* ---------- การ์ดผู้เล่น ---------- */
+.player-card {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 4px 0 var(--panel-edge);
+}
+
+/* ---------- แผงแต่งห้อง ---------- */
+.editor {
+  position: absolute;
+  top: 64px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 16px));
+  padding: 10px;
+  box-sizing: border-box;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #2b2140f0;
+}
+
+.editor .tabs button {
+  padding: 4px 6px;
+  font-size: 14px;
+}
+
+.editor-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.editor-tip {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 74px;
+  padding: 6px 4px;
+  background: #3a2f55;
+}
+
+.item.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.item small {
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.item .erase {
+  font-size: 26px;
+}
+
+.swatch-row button.active {
+  background: var(--accent);
+  color: #2b1d26;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .editor {
+    top: auto;
+    height: 55vh;
+  }
+}

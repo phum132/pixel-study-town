@@ -64,11 +64,13 @@ set(walls, 22, 14, T.well);
 set(walls, 16, 13, T.sign);
 
 // --- บ้าน 4 หลัง (ประตูอยู่ช่องขวาสุดของแถวล่าง) ---
+const doors = []; // ตำแหน่งประตู: เดินชนจากด้านล่าง = เข้าบ้านตัวเอง
 function house(x, y, tiles) {
   tiles.forEach((row, j) => row.forEach((t, i) => set(j === 0 ? above : walls, x + i, y + j, t)));
   // หลังคาแถวบนวาดทับตัวละคร แต่ยังต้องชน จึงใส่กำแพงล่องหนใต้มันด้วย
   for (let i = 0; i < 4; i++) set(walls, x + i, y, tiles[1][i]);
   reserve(x - 1, y - 1, 6, 5);
+  doors.push({ x: (x + 3) * 16, y: (y + 3) * 16 - 2, width: 16, height: 10 });
   for (let yy = y + 3; yy < (y < 15 ? 9 : 24); yy++) path(x + 3, yy); // ทางเดินจากประตูไปถนน
 }
 house(5, 5, T.houseBlue);
@@ -107,14 +109,17 @@ const tileLayer = (id, name, arr) => ({
 const map = {
   type: 'map', version: '1.10', tiledversion: '1.11.0', orientation: 'orthogonal', renderorder: 'right-down',
   width: W, height: H, tilewidth: 16, tileheight: 16, infinite: false, compressionlevel: -1,
-  nextlayerid: 5, nextobjectid: 2,
+  nextlayerid: 5, nextobjectid: 6,
   layers: [
     tileLayer(1, 'ground', ground),
     tileLayer(2, 'walls', walls),
     tileLayer(3, 'above', above),
     {
       id: 4, name: 'objects', type: 'objectgroup', x: 0, y: 0, opacity: 1, visible: true, draworder: 'topdown',
-      objects: [{ id: 1, name: 'spawn', type: '', x: 19.5 * 16, y: 16 * 16, width: 0, height: 0, point: true, rotation: 0, visible: true }],
+      objects: [
+        { id: 1, name: 'spawn', type: '', x: 19.5 * 16, y: 16 * 16, width: 0, height: 0, point: true, rotation: 0, visible: true },
+        ...doors.map((d, n) => ({ id: 2 + n, name: 'door', type: '', ...d, rotation: 0, visible: true })),
+      ],
     },
   ],
   tilesets: [{

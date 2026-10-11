@@ -1,14 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
-import type { Room } from 'colyseus.js';
 import { TownScene } from './TownScene';
-import type { CharacterColors } from './character';
+import { HomeScene } from './HomeScene';
+import type { WorldInit } from './WorldScene';
 
-type Props = { colors: CharacterColors; name: string; room: Room };
+type Props = { scene: 'town' | 'home'; init: WorldInit };
 
 // กล่อง React ที่สร้างเกม Phaser ไว้ข้างใน และลบเกมทิ้งเมื่อออกจากหน้า
-export function PhaserGame({ colors, name, room }: Props) {
+// ใช้ข้อมูล init ชุดแรกเท่านั้น (ข้อมูลที่เปลี่ยนระหว่างเล่นส่งผ่าน bridge แทน)
+// ถ้าต้องการเริ่มเกมใหม่ ให้ตัวที่เรียกใช้เปลี่ยน key ของ component นี้
+export function PhaserGame({ scene, init }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [initial] = useState(init);
 
   useEffect(() => {
     const game = new Phaser.Game({
@@ -16,15 +19,16 @@ export function PhaserGame({ colors, name, room }: Props) {
       parent: containerRef.current!,
       width: 800,
       height: 480,
-      backgroundColor: '#2b2140',
+      backgroundColor: '#1a1424',
       pixelArt: true, // ไม่เบลอภาพพิกเซลตอนขยาย
       physics: { default: 'arcade' },
       audio: { noAudio: true }, // เพลง lofi จะเล่นผ่านเครื่องเล่นแยก (Phase 6)
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     });
-    game.scene.add('TownScene', TownScene, true, { colors, name, room });
+    if (scene === 'town') game.scene.add('TownScene', TownScene, true, initial);
+    else game.scene.add('HomeScene', HomeScene, true, initial);
     return () => game.destroy(true);
-  }, [colors, name, room]);
+  }, [scene, initial]);
 
   return <div ref={containerRef} className="game" />;
 }

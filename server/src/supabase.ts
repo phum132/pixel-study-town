@@ -23,3 +23,10 @@ export async function identify(token: unknown): Promise<PlayerIdentity> {
 
   return { userId: data.user.id, username: profile.username, avatar: JSON.stringify(profile.avatar ?? {}) };
 }
+
+// ถามฐานข้อมูลว่าบ้านนี้เปิดให้คนอื่นเข้ามาส่องไหม (ดู room_is_visitable ใน supabase/migrations/002_rooms.sql)
+export async function isRoomVisitable(ownerId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('room_is_visitable', { owner: ownerId });
+  if (error) throw new Error(`เช็กห้องไม่ได้: ${error.message}`);
+  return data === true;
+}

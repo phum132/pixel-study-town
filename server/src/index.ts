@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { Server, matchMaker } from 'colyseus';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { TownRoom } from './rooms/TownRoom.js';
+import { HomeRoom } from './rooms/HomeRoom.js';
 import { COMMUNITY_IDS } from './communities.js';
 
 const port = Number(process.env.PORT ?? 2567);
@@ -29,6 +30,8 @@ const gameServer = new Server({ transport: new WebSocketTransport({ server: http
 
 // คอมมูเดียวกันจะเข้าห้องเดียวกัน (filterBy) จนกว่าห้องจะเต็ม
 gameServer.define('town', TownRoom).filterBy(['community']);
+// บ้านของใครของมัน: เลือกห้องตามเจ้าของบ้าน
+gameServer.define('home', HomeRoom).filterBy(['owner']);
 
 await gameServer.listen(port);
 console.log(`🏘️  เซิร์ฟเวอร์เกมพร้อมแล้ว ws://localhost:${port}`);
