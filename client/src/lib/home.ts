@@ -10,7 +10,8 @@ export const DOOR_COLS = [5, 6];
 
 export type FloorStyle = 'wood' | 'tile' | 'carpet';
 export type WallStyle = 'plain' | 'stripe' | 'dots';
-export type Theme = { floor: FloorStyle; floorColor: string; wall: WallStyle; wallColor: string };
+// music = เพลงประจำบ้าน (id สถานีใน lib/music.ts) คนที่มาส่องจะเห็นปุ่มชวนฟัง
+export type Theme = { floor: FloorStyle; floorColor: string; wall: WallStyle; wallColor: string; music?: string };
 export type Placed = { i: string; x: number; y: number };
 export type HomeData = { theme: Theme; layout: Placed[]; isPublic: boolean };
 

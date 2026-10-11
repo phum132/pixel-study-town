@@ -13,6 +13,7 @@ import {
 } from '../lib/home';
 import type { EditTool } from '../game/HomeScene';
 import { FurnitureIcon } from './FurnitureIcon';
+import { STATIONS } from '../lib/music';
 
 type Tab = FurnitureKind | 'theme';
 const TABS: { id: Tab; label: string }[] = [
@@ -95,6 +96,17 @@ export function RoomEditor({ saved, bridge, onSave, onClose }: Props) {
           <ColorRow colors={FLOOR_COLORS} value={draft.theme.floorColor} onPick={(floorColor) => setTheme({ floorColor })} />
           <ThemeRow label="ผนัง" options={WALL_STYLES} value={draft.theme.wall} onPick={(wall) => setTheme({ wall })} />
           <ColorRow colors={WALL_COLORS} value={draft.theme.wallColor} onPick={(wallColor) => setTheme({ wallColor })} />
+          <label className="music-pick">
+            🎵 เพลงประจำบ้าน
+            <select value={draft.theme.music ?? ''} onChange={(e) => setTheme({ music: e.target.value || undefined })}>
+              <option value="">ไม่มี</option>
+              {STATIONS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.emoji} {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="check">
             <input
               type="checkbox"

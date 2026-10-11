@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from './lib/supabase';
 import { fetchProfile, type Profile } from './lib/profile';
 import { useFocus } from './lib/focus';
+import { MusicPlayer } from './ui/MusicPlayer';
 import { AuthScreen } from './ui/AuthScreen';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { CommunityPicker } from './ui/CommunityPicker';
@@ -36,6 +37,7 @@ export default function App() {
 
   const userId = session?.user.id;
   const focus = useFocus(userId); // อยู่ระดับแอป นาฬิกาจะไม่หยุดตอนเดินเปลี่ยนห้อง
+  const [homeMusic, setHomeMusic] = useState<{ key: string; ownerName: string } | null>(null);
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -89,16 +91,21 @@ export default function App() {
   }
 
   return (
-    <WorldView
-      key={target.kind === 'town' ? `town-${target.communityId}` : `home-${target.ownerId}`}
-      profile={profile}
-      target={target}
-      onPickCommunity={() => setTarget(null)}
-      onEditProfile={() => setEditing(true)}
-      onVisitHome={visitHome}
-      onLeaveHome={leaveHome}
-      focus={focus}
-    />
+    <>
+      <WorldView
+        key={target.kind === 'town' ? `town-${target.communityId}` : `home-${target.ownerId}`}
+        profile={profile}
+        target={target}
+        onPickCommunity={() => setTarget(null)}
+        onEditProfile={() => setEditing(true)}
+        onVisitHome={visitHome}
+        onLeaveHome={leaveHome}
+        focus={focus}
+        onHomeMusic={setHomeMusic}
+      />
+      {/* อยู่นอก WorldView เพลงจึงเล่นต่อได้ตอนเดินระหว่างเมืองกับบ้าน */}
+      <MusicPlayer homeMusic={homeMusic} />
+    </>
   );
 }
 

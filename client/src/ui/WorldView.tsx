@@ -24,6 +24,7 @@ type Props = {
   onVisitHome: (ownerId: string) => void;
   onLeaveHome: () => void;
   focus: FocusApi;
+  onHomeMusic: (music: { key: string; ownerName: string } | null) => void;
 };
 
 const MAX_MESSAGES = 50;
@@ -32,7 +33,7 @@ const LEAVE_REASONS: Record<number, string> = {
 };
 
 // เข้าห้องบนเซิร์ฟเวอร์ (เมืองของคอมมู หรือบ้านของใครสักคน) แล้วแสดงเกม + แถบด้านบน + แชท
-export function WorldView({ profile, target, onPickCommunity, onEditProfile, onVisitHome, onLeaveHome, focus }: Props) {
+export function WorldView({ profile, target, onPickCommunity, onEditProfile, onVisitHome, onLeaveHome, focus, onHomeMusic }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [home, setHome] = useState<HomeData | null>(null);
   const [ownerName, setOwnerName] = useState('');
@@ -95,6 +96,13 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
       joined?.leave();
     };
   }, [isHome, ownerId, communityId, attempt, bridge]);
+
+  // เพลงประจำบ้าน → ให้เครื่องเล่นเพลงขึ้นปุ่มชวนฟัง (เฉพาะบ้านคนอื่น) และล้างค่าเมื่อออกจากบ้าน
+  const homeMusicKey = isHome && !isOwner ? home?.theme.music : undefined;
+  useEffect(() => {
+    onHomeMusic(homeMusicKey ? { key: homeMusicKey, ownerName } : null);
+    return () => onHomeMusic(null);
+  }, [homeMusicKey, ownerName, onHomeMusic]);
 
   // บอกเซิร์ฟเวอร์ว่ากำลังโฟกัสอยู่ไหม (ส่งใหม่ทุกครั้งที่เข้าห้องใหม่หรือสถานะเปลี่ยน)
   useEffect(() => {

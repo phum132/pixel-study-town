@@ -577,3 +577,132 @@ button.icon {
     height: 55vh;
   }
 }
+
+/* ---------- เพลง lofi ---------- */
+.music {
+  position: absolute;
+  top: 60px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 224px;
+  padding: 6px;
+  box-sizing: border-box;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #2b2140e6;
+}
+
+.music-bar {
+  display: flex;
+  gap: 4px;
+}
+
+.music-bar button:first-child {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* กฎของ YouTube: ต้องเห็นวิดีโออย่างน้อย 200x200 ระหว่างเล่น จึงซ่อนได้แค่ตอนหยุด */
+.music-video {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #000;
+}
+
+.music-video.hidden {
+  height: 0;
+  visibility: hidden;
+}
+
+.music-suggest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.music-suggest span {
+  flex: 1;
+}
+
+.music-suggest button {
+  padding: 2px 8px;
+}
+
+.music-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.station-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.station-grid button {
+  padding: 4px;
+  font-size: 12px;
+}
+
+.station-grid button.active {
+  background: var(--accent);
+  color: #2b1d26;
+}
+
+.music-link {
+  display: flex;
+  gap: 4px;
+}
+
+.music-link input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 2px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #1d1630;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.music-link button {
+  padding: 2px 8px;
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volume input {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.music-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.music-pick select {
+  padding: 6px;
+  border: 2px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #1d1630;
+  color: var(--text);
+  font: inherit;
+}
