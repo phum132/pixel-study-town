@@ -1,0 +1,155 @@
+import type { HomeData, Placed } from './home';
+
+// ตึกสาธารณะในเมือง: ทุกคนในคอมมูเดียวกันเข้าห้องเดียวกัน แต่งไว้แล้ว แก้ไม่ได้ (Phase 8 จะกลายเป็นห้องเรียน)
+// id ต้องตรงกับ PLACE_IDS ใน server/src/rooms/PlaceRoom.ts และวัตถุ door (place=...) ใน town.json
+// ห้องขนาดเดียวกับบ้าน 12x9 ช่อง: แถว 0-1 ผนัง, แถว 2-8 พื้น, ประตูกลางแถวล่าง (ช่อง 5-6)
+
+export type Place = { id: string; name: string; emoji: string; desc: string; room: HomeData };
+
+const row = (i: string, xs: number[], y: number): Placed[] => xs.map((x) => ({ i, x, y }));
+// โต๊ะ 1 ช่อง + เก้าอี้ 4 ทิศหันเข้าหาโต๊ะ = กลุ่มติว 4 คน (เก้าอี้เดินทับได้ ยืนบนเก้าอี้ = นั่ง)
+const pod = (table: string, x: number, y: number): Placed[] => [
+  { i: table, x, y },
+  { i: 'chair_front', x, y: y - 1 },
+  { i: 'chair_back', x, y: y + 1 },
+  { i: 'chair_right', x: x - 1, y },
+  { i: 'chair_left', x: x + 1, y },
+];
+
+export const PLACES: Place[] = [
+  {
+    id: 'library',
+    name: 'ห้องสมุด',
+    emoji: '📚',
+    desc: 'มุมอ่านหนังสือเงียบๆ',
+    room: {
+      isPublic: true,
+      theme: { floor: 'wood', floorColor: '#8a5a3b', wall: 'stripe', wallColor: '#c9e0e8' },
+      layout: [
+        // ห้องสมุด: 4 โต๊ะยาว รวม 24 ที่นั่ง พรมเป็นทางเดินจากประตูไปหน้ากระดาน
+        // ผนังช่อง 4-7 เว้นไว้ให้กระดานถาม-ตอบของ Phase 8
+        { i: 'painting_wide', x: 0, y: 0 },
+        { i: 'portrait_teal', x: 2, y: 0 },
+        { i: 'tapestry_teal', x: 5, y: 0 },
+        { i: 'portrait_orange', x: 9, y: 0 },
+        { i: 'painting_wide', x: 10, y: 0 },
+        ...row('bookshelf', [0, 1, 2, 3, 8, 9, 10, 11], 2),
+        { i: 'plant_big', x: 4, y: 2 },
+        { i: 'plant_big', x: 7, y: 2 },
+        { i: 'rug_green', x: 5, y: 3 },
+        { i: 'rug_green', x: 5, y: 5 },
+        { i: 'rug_cream', x: 5, y: 7 },
+        { i: 'plant_small', x: 0, y: 3 },
+        { i: 'plant_small', x: 11, y: 3 },
+        ...row('chair_front', [1, 2, 3, 8, 9, 10], 3),
+        { i: 'table_long', x: 1, y: 4 },
+        { i: 'table_long', x: 8, y: 4 },
+        ...row('chair_back', [1, 2, 3, 8, 9, 10], 5),
+        ...row('chair_front', [1, 2, 3, 8, 9, 10], 6),
+        { i: 'table_long', x: 1, y: 7 },
+        { i: 'table_long', x: 8, y: 7 },
+        ...row('chair_back', [1, 2, 3, 8, 9, 10], 8),
+        { i: 'lamp', x: 0, y: 6 },
+        { i: 'lamp', x: 11, y: 6 },
+      ],
+    },
+  },
+  {
+    id: 'shrine',
+    name: 'ห้องสมาธิ',
+    emoji: '🧘',
+    desc: 'นั่งโฟกัสเงียบๆ ด้วยกัน',
+    room: {
+      isPublic: true,
+      theme: { floor: 'carpet', floorColor: '#a35d6a', wall: 'plain', wallColor: '#e8dcc0' },
+      layout: [
+        // ห้องสมาธิ: 12 ที่นั่ง เว้นช่องระหว่างคน มีแท่นด้านหน้า
+        { i: 'torch', x: 1, y: 0 },
+        { i: 'tapestry_teal', x: 2, y: 0 },
+        { i: 'portrait_teal', x: 5, y: 0 },
+        { i: 'portrait_orange', x: 6, y: 0 },
+        { i: 'tapestry_green', x: 8, y: 0 },
+        { i: 'torch', x: 10, y: 0 },
+        { i: 'plant_big', x: 0, y: 2 },
+        { i: 'plant_big', x: 11, y: 2 },
+        { i: 'lamp', x: 3, y: 2 },
+        { i: 'lamp', x: 8, y: 2 },
+        { i: 'table_cloth', x: 5, y: 2 },
+        { i: 'table_cloth', x: 6, y: 2 },
+        { i: 'rug_red', x: 1, y: 4 },
+        { i: 'rug_red', x: 8, y: 4 },
+        { i: 'rug_red', x: 1, y: 6 },
+        { i: 'rug_red', x: 8, y: 6 },
+        { i: 'rug_green', x: 5, y: 4 },
+        { i: 'rug_green', x: 5, y: 6 },
+        ...row('stool', [1, 3, 8, 10], 4),
+        ...row('stool', [1, 3, 8, 10], 6),
+        ...row('stool', [1, 3, 8, 10], 8),
+        { i: 'plant_small', x: 0, y: 8 },
+        { i: 'plant_small', x: 11, y: 8 },
+      ],
+    },
+  },
+  {
+    id: 'cafe',
+    name: 'คาเฟ่',
+    emoji: '🍵',
+    desc: 'นั่งคุยเล่น พักสมอง',
+    room: {
+      isPublic: true,
+      theme: { floor: 'tile', floorColor: '#d9b38c', wall: 'dots', wallColor: '#f2c9d0' },
+      layout: [
+        // คาเฟ่: โต๊ะกลม 3 ตัว ตัวละ 4 ที่ + บาร์ 3 ที่ + โซฟา 2 ที่
+        { i: 'frames_small', x: 1, y: 0 },
+        { i: 'tapestry_green', x: 2, y: 0 },
+        { i: 'mirror', x: 5, y: 0 },
+        { i: 'painting_map', x: 7, y: 0 },
+        { i: 'frames_small', x: 10, y: 0 },
+        { i: 'plant_big', x: 0, y: 2 },
+        { i: 'armchair_orange', x: 5, y: 2 },
+        { i: 'armchair_green', x: 6, y: 2 },
+        { i: 'rug_cream', x: 5, y: 3 },
+        ...row('counter', [8, 9, 10], 2),
+        { i: 'stove', x: 11, y: 2 },
+        { i: 'barrel', x: 11, y: 3 },
+        ...row('stool', [8, 9, 10], 3),
+        ...pod('table_round', 2, 4),
+        ...pod('table_round', 2, 7),
+        ...pod('table_round', 9, 6),
+        { i: 'plant_small', x: 0, y: 8 },
+        { i: 'plant_small', x: 11, y: 8 },
+      ],
+    },
+  },
+  {
+    id: 'ramen',
+    name: 'ร้านราเมน',
+    emoji: '🍜',
+    desc: 'กินราเมนกับเพื่อน',
+    room: {
+      isPublic: true,
+      theme: { floor: 'wood', floorColor: '#b07a4f', wall: 'plain', wallColor: '#4a3d66' },
+      layout: [
+        { i: 'torch', x: 1, y: 0 },
+        { i: 'painting_wide', x: 4, y: 0 },
+        { i: 'tapestry_teal', x: 6, y: 0 },
+        { i: 'torch', x: 10, y: 0 },
+        { i: 'plant_big', x: 0, y: 2 },
+        { i: 'plant_big', x: 11, y: 2 },
+        // ครัวหลังเคาน์เตอร์ยาว + เก้าอี้กลมหน้าเคาน์เตอร์
+        { i: 'stove', x: 3, y: 2 },
+        { i: 'stove', x: 4, y: 2 },
+        { i: 'barrel', x: 8, y: 2 },
+        { i: 'barrel', x: 9, y: 2 },
+        ...row('counter', [2, 3, 4, 5, 6, 7, 8, 9], 3),
+        ...row('stool', [2, 3, 4, 5, 6, 7, 8, 9], 4),
+        ...pod('table_cloth', 2, 6),
+        ...pod('table_cloth', 9, 6),
+        { i: 'rug_red', x: 0, y: 7 },
+        { i: 'rug_red', x: 9, y: 7 },
+      ],
+    },
+  },
+];
+
+export const PLACE_BY_ID = new Map(PLACES.map((p) => [p.id, p]));

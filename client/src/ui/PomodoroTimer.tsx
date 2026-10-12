@@ -15,7 +15,7 @@ export function PomodoroTimer({ focus }: { focus: FocusApi }) {
           <div className="pomo-options">
             {FOCUS_OPTIONS.map((m) => (
               <button key={m} className={planned === m ? 'active' : ''} onClick={() => setPlanned(m)}>
-                {m === 1 ? '1 (ทดสอบ)' : m} นาที
+                {m} นาที
               </button>
             ))}
           </div>

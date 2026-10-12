@@ -117,9 +117,12 @@ const BUILDINGS = {
   shrine: { col: 23, row: 0, w: 3, h: 3, door: 1 },
   woodHouse: { col: 26, row: 0, w: 3, h: 3, door: 1 },
 };
-const doors = []; // ประตูบ้าน: เดินชนจากด้านล่าง = เข้าบ้านตัวเอง
+const doors = []; // ประตู: เดินชนจากด้านล่าง = เข้าบ้านตัวเอง (หรือเข้าตึกสาธารณะ ถ้ามี place)
+// ป้ายเล็กหน้าตึกที่เข้าได้ + ป้ายบอกทางในลาน (ชื่อลอยในเกม)
+const PLACE_SIGNS = { library: '📚 ห้องสมุด', shrine: '🧘 ห้องสมาธิ', cafe: '🍵 คาเฟ่', ramen: '🍜 ราเมน' };
+const signs = [];
 
-function building(kind, x, y, { isHome = false } = {}) {
+function building(kind, x, y, { isHome = false, place = '' } = {}) {
   const b = BUILDINGS[kind];
   for (let j = 0; j < b.h; j++) {
     for (let i = 0; i < b.w; i++) {
@@ -131,7 +134,8 @@ function building(kind, x, y, { isHome = false } = {}) {
   for (let i = 0; i < b.w; i++) put(block, x + i, y, GRASS); // หลังคาแถวบนก็ยังเดินทะลุไม่ได้
   mark(x - 1, y - 1, b.w + 2, b.h + 2);
   const dx = x + b.door;
-  if (isHome) doors.push({ x: dx * 16, y: (y + b.h) * 16 - 2, width: 16, height: 10 });
+  if (isHome || place) doors.push({ x: dx * 16, y: (y + b.h) * 16 - 2, width: 16, height: 10, place });
+  if (place) signs.push({ text: PLACE_SIGNS[place], x: dx * 16 + 8, y: (y + b.h - 1) * 16 - 5 });
   return { doorX: dx, bottom: y + b.h };
 }
 
@@ -182,26 +186,27 @@ for (let y = 2; y < H - 2; y += 2) {
 // ลานกลางเมือง + ถนนหลัก 4 ทิศ (กว้าง 2 ช่อง)
 const PLAZA = { x: 26, y: 19, w: 12, h: 10 };
 paveRect(PLAZA.x, PLAZA.y, PLAZA.w, PLAZA.h);
-paveRect(31, 4, 2, PLAZA.y - 4); // ขึ้นเหนือ
-paveRect(31, PLAZA.y + PLAZA.h, 2, H - 4 - PLAZA.y - PLAZA.h); // ลงใต้
+paveRect(31, 13, 2, PLAZA.y - 13); // ขึ้นเหนือ ถึงถนนหน้าตึก
+paveRect(31, PLAZA.y + PLAZA.h, 2, 42 - PLAZA.y - PLAZA.h); // ลงใต้ ถึงซอยบ้านซอยล่าง
 paveRect(4, 23, PLAZA.x - 4, 2); // ไปตะวันตก
 paveRect(PLAZA.x + PLAZA.w, 23, W - 4 - PLAZA.x - PLAZA.w, 2); // ไปตะวันออก
 
 // ---- 📚 ย่านห้องสมุด (ตะวันตกเฉียงเหนือ): วัดเงียบๆ + ศาลเจ้า ล้อมด้วยต้นสน ----
-const library = building('temple', 12, 8);
+const library = building('temple', 12, 8, { place: 'library' });
 paveRect(library.doorX, library.bottom, 1, 23 - library.bottom);
-const shrine = building('shrine', 20, 9);
+const shrine = building('shrine', 20, 9, { place: 'shrine' });
 paveRect(shrine.doorX, shrine.bottom, 1, 23 - shrine.bottom);
 for (const [x, y] of [[5, 5], [7, 5], [5, 8], [5, 12], [7, 15], [25, 5], [27, 7], [9, 17], [17, 16], [24, 16]]) {
   smallTree(x, y, TREE.darkGreen);
 }
 
 // ---- ☕ ย่านคาเฟ่ (ตะวันออกเฉียงเหนือ): ร้านน้ำชา + ร้านราเมน ----
-const tea = building('teaHouse', 40, 9);
+const tea = building('teaHouse', 40, 9, { place: 'cafe' });
 paveRect(tea.doorX, tea.bottom, 1, 23 - tea.bottom);
-const ramen = building('ramen', 48, 9);
+const ramen = building('ramen', 48, 9, { place: 'ramen' });
 paveRect(ramen.doorX, ramen.bottom, 1, 23 - ramen.bottom);
 bigTree('orange', 55, 6);
+paveRect(13, 13, 37, 2); // ถนนหน้าตึกฝั่งเหนือ: ห้องสมุด - ห้องสมาธิ - คาเฟ่ - ราเมน
 for (const [x, y] of [[37, 5], [39, 15], [46, 16], [53, 16], [58, 12], [44, 5]]) smallTree(x, y);
 
 // ---- 🏠 ย่านบ้าน (ตะวันตกเฉียงใต้): 6 หลัง ประตูทุกหลัง = บ้านของเรา ----
@@ -212,6 +217,8 @@ const homes = [
 paveRect(4, 33, 24, 1); // ถนนซอยระหว่างแถวบ้าน
 paveRect(4, 41, 24, 1);
 paveRect(4, 25, 1, 17); // เชื่อมซอยกับถนนหลัก
+paveRect(28, 33, 3, 1); // ต่อซอยบ้านเข้าถนนลงใต้
+paveRect(28, 41, 3, 1);
 for (const [kind, x, y] of homes) {
   const h = building(kind, x, y, { isHome: true });
   paveRect(h.doorX, h.bottom, 1, (y < 33 ? 33 : 41) - h.bottom);
@@ -225,6 +232,7 @@ bigTree('green', 39, 38);
 for (const [x, y] of [[43, 42], [47, 42], [51, 42], [55, 42], [59, 28], [42, 27], [50, 27]]) smallTree(x, y, TREE.pink);
 paveRect(PLAZA.x + PLAZA.w, 27, 4, 1); // ทางเดินเล่นจากลานไปสวน
 paveRect(41, 27, 1, 3);
+paveRect(33, 35, 11, 1); // ทางเดินจากถนนใต้ไปริมทะเลสาบ
 
 // ---------- ป้ายย่าน (ชื่อลอยในเกม) + ตู้เกม + จุดเกิด ----------
 const labels = [
@@ -233,6 +241,14 @@ const labels = [
   { name: 'label', text: '🏠 ย่านบ้าน', x: 16 * 16, y: 26.5 * 16 },
   { name: 'label', text: '🌸 สวนทะเลสาบ', x: 50 * 16, y: 29.5 * 16 },
 ];
+// ป้ายบอกทางที่ขอบลาน (เห็นตั้งแต่จุดเกิด)
+signs.push(
+  { text: '↑ 📚 ห้องสมุด · ☕ คาเฟ่', x: (PLAZA.x + PLAZA.w / 2) * 16, y: (PLAZA.y + 0.6) * 16 },
+  { text: '← 📚 ห้องสมุด · 🧘 สมาธิ', x: (PLAZA.x + 2.5) * 16, y: 22.3 * 16 },
+  { text: '☕ คาเฟ่ · 🍜 ราเมน →', x: (PLAZA.x + PLAZA.w - 2.5) * 16, y: 22.3 * 16 },
+  { text: '🌸 สวน →', x: (PLAZA.x + PLAZA.w - 1.5) * 16, y: 26.4 * 16 },
+  { text: '↓ 🏠 ย่านบ้าน · 🌸 ทะเลสาบ', x: (PLAZA.x + PLAZA.w / 2) * 16, y: (PLAZA.y + PLAZA.h - 0.6) * 16 },
+);
 const arcade = { x: (PLAZA.x + PLAZA.w - 2) * 16, y: (PLAZA.y + 1) * 16 };
 mark(PLAZA.x + PLAZA.w - 2, PLAZA.y + 1);
 
@@ -271,9 +287,12 @@ const map = {
       id: 6, name: 'objects', type: 'objectgroup', x: 0, y: 0, opacity: 1, visible: true, draworder: 'topdown',
       objects: [
         obj({ name: 'spawn', x: (PLAZA.x + PLAZA.w / 2) * 16, y: (PLAZA.y + PLAZA.h / 2) * 16, point: true }),
-        ...doors.map((d) => obj({ name: 'door', ...d })),
+        ...doors.map(({ place, ...d }) =>
+          obj({ name: 'door', ...d, ...(place ? { properties: [{ name: 'place', type: 'string', value: place }] } : {}) }),
+        ),
         obj({ name: 'arcade', ...arcade, width: 16, height: 16 }),
         ...labels.map((l) => obj({ name: 'label', x: l.x, y: l.y, point: true, properties: [{ name: 'text', type: 'string', value: l.text }] })),
+        ...signs.map((l) => obj({ name: 'sign', x: l.x, y: l.y, point: true, properties: [{ name: 'text', type: 'string', value: l.text }] })),
       ],
     },
   ],
@@ -285,4 +304,4 @@ const map = {
 map.nextobjectid = objId;
 
 writeFileSync(new URL('../public/assets/maps/town.json', import.meta.url), JSON.stringify(map));
-console.log(`สร้าง town.json แล้ว (${W}x${H} ช่อง, บ้าน ${doors.length} หลัง)`);
+console.log(`สร้าง town.json แล้ว (${W}x${H} ช่อง, ประตู ${doors.length} บาน)`);

@@ -15,7 +15,8 @@ const ARCADE_REACH = 22; // ยืนห่างตู้เกมไม่เ�
 
 // ฉากเมือง 4 ย่าน: แผนที่จาก Tiled + ประตูบ้าน (เดินชนประตูจากด้านล่าง = เข้าบ้านตัวเอง) + ป้ายย่าน + ตู้เกม Snake
 export class TownScene extends WorldScene {
-  private doors: Phaser.Geom.Rectangle[] = [];
+  // place = id ตึกสาธารณะ (ว่าง = ประตูบ้าน เข้าบ้านตัวเอง)
+  private doors: { rect: Phaser.Geom.Rectangle; place: string }[] = [];
   private lastDoorAt = 0;
   private arcade?: { x: number; y: number; hint: Phaser.GameObjects.Text };
   private keyE!: Phaser.Input.Keyboard.Key;
@@ -41,16 +42,27 @@ export class TownScene extends WorldScene {
     walls.setCollisionByExclusion([-1]); // ทุกช่องในชั้น walls และ block ชนได้
     block.setCollisionByExclusion([-1]);
 
-    // ป้ายชื่อย่าน (วัตถุชื่อ label มีค่า text)
-    for (const o of map.filterObjects('objects', (o) => o.name === 'label') ?? []) {
+    // ป้ายชื่อย่าน (label ตัวใหญ่) และป้ายบอกทาง/หน้าตึก (sign) — วัตถุมีค่า text
+    // ความลึก 15 = เหนือหลังคา/ยอดไม้ (10) แต่ใต้ชื่อผู้เล่น (20)
+    for (const o of map.filterObjects('objects', (o) => o.name === 'label' || o.name === 'sign') ?? []) {
       const text = (o.properties as { name: string; value: string }[] | undefined)?.find((p) => p.name === 'text')?.value;
-      if (text) makeLabel(this, text, '#fff3c4', { fontSize: '36px', strokeThickness: 6 }).setOrigin(0.5).setPosition(o.x!, o.y!).setDepth(9);
+      if (!text) continue;
+      const big = o.name === 'label';
+      const touch = this.sys.game.device.input.touch; // มือถือจอเล็ก เกมถูกย่อ จึงขยายตัวหนังสือให้อ่านออก
+      const size = big ? (touch ? 44 : 36) : touch ? 36 : 28;
+      makeLabel(this, text, big ? '#fff3c4' : '#ffffff', { fontSize: `${size}px`, strokeThickness: big ? 6 : 5 })
+        .setOrigin(0.5)
+        .setPosition(o.x!, o.y!)
+        .setDepth(15);
     }
 
     // วัตถุในชั้น objects (ย้ายตำแหน่งได้ในโปรแกรม Tiled)
     this.doors = map
       .filterObjects('objects', (o) => o.name === 'door')!
-      .map((o) => new Phaser.Geom.Rectangle(o.x!, o.y!, o.width!, o.height!));
+      .map((o) => ({
+        rect: new Phaser.Geom.Rectangle(o.x!, o.y!, o.width!, o.height!),
+        place: ((o.properties as { name: string; value: string }[] | undefined)?.find((p) => p.name === 'place')?.value) ?? '',
+      }));
 
     const colliders: Phaser.Types.Physics.Arcade.ArcadeColliderType[] = [walls, block];
     const spot = map.findObject('objects', (o) => o.name === 'arcade');
@@ -66,7 +78,8 @@ export class TownScene extends WorldScene {
     sprite.setInteractive({ useHandCursor: true });
     sprite.on('pointerdown', () => this.openArcade());
 
-    const hint = makeLabel(this, 'กด E เล่น 🐍', '#ffcf5c').setOrigin(0.5, 1).setPosition(x + 8, y - 10).setVisible(false);
+    const touch = this.sys.game.device.input.touch; // มือถือไม่มีปุ่ม E
+    const hint = makeLabel(this, touch ? 'แตะตู้ หรือกด E 🐍' : 'กด E เล่น 🐍', '#ffcf5c').setOrigin(0.5, 1).setPosition(x + 8, y - 10).setVisible(false);
     this.arcade = { x: x + 8, y: y + 8, hint };
 
     const block = this.add.zone(x, y + 4, 16, 12).setOrigin(0);
@@ -94,9 +107,11 @@ export class TownScene extends WorldScene {
     const { x, y } = this.me.sprite;
     const now = this.time.now;
     if (this.dir !== 'up' || now - this.lastDoorAt < DOOR_COOLDOWN_MS) return;
-    if (this.doors.some((d) => d.contains(x, y + 4))) {
+    const door = this.doors.find((d) => d.rect.contains(x, y + 4));
+    if (door) {
       this.lastDoorAt = now;
-      this.bridge.emit('enter-home');
+      if (door.place) this.bridge.emit('enter-place', door.place);
+      else this.bridge.emit('enter-home');
     }
   }
 }

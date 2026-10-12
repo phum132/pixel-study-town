@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 // ฐานข้อมูลเป็นคนจับเวลาจริง (ดู 003_todos_focus.sql) เบราว์เซอร์แค่นับถอยหลังให้ดู
 // ถ้าแก้นาฬิกาในเครื่อง นาทีที่ได้ก็ยังคิดจากนาฬิกาของฐานข้อมูลอยู่ดี
 
-export const FOCUS_OPTIONS = import.meta.env.DEV ? [25, 50, 15, 1] : [25, 50, 15]; // 1 นาที = โหมดทดสอบ (เฉพาะตอนพัฒนา)
+export const FOCUS_OPTIONS = [25, 50, 15]; // ต้องตรงกับที่ start_focus รับ (006_review_fixes.sql)
 export const BREAK_MINUTES = 5;
 
 // มิลลิวินาที → "MM:SS"

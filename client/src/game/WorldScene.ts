@@ -123,6 +123,11 @@ export abstract class WorldScene extends Phaser.Scene {
         this.others.get(sessionId)?.destroy();
         this.others.delete(sessionId);
       }),
+      // เซิร์ฟเวอร์ไม่รับตำแหน่งที่ส่งไป (เดินเร็วเกิน/เน็ตค้าง) → กลับไปยืนตรงที่เซิร์ฟเวอร์รู้
+      this.room.onMessage('correct', (pos: { x: number; y: number }) => {
+        this.me.sprite.setPosition(pos.x, pos.y);
+        this.lastSent = { ...this.lastSent, x: pos.x, y: pos.y };
+      }),
       this.room.onMessage('chat', (msg: ChatMessage) => {
         if (msg.system || !msg.sessionId) return;
         const who = msg.sessionId === this.room.sessionId ? this.me : this.others.get(msg.sessionId);

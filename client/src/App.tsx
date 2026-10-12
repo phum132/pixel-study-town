@@ -4,6 +4,7 @@ import { supabase, supabaseConfigured } from './lib/supabase';
 import { fetchProfile, type Profile } from './lib/profile';
 import { useFocus } from './lib/focus';
 import { MusicPlayer } from './ui/MusicPlayer';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { AuthScreen } from './ui/AuthScreen';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { CommunityPicker } from './ui/CommunityPicker';
@@ -12,6 +13,7 @@ import { WorldView, type WorldTarget } from './ui/WorldView';
 // ลำดับหน้าจอ: ล็อกอิน → สร้างตัวละคร (ครั้งแรก) → เลือกคอมมู → เข้าเมือง ⇄ บ้าน
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const userId = session?.user.id;
   // จำไว้ด้วยว่าโปรไฟล์ที่โหลดมาเป็นของบัญชีไหน กันข้อมูลบัญชีเก่าค้างตอนสลับบัญชี
   const [loaded, setLoaded] = useState<{ userId: string; profile: Profile | null; error?: string } | null>(null);
   const [editing, setEditing] = useState(false);
@@ -24,9 +26,20 @@ export default function App() {
     setTarget({ kind: 'town', communityId });
   }, []);
   const visitHome = useCallback((ownerId: string) => setTarget({ kind: 'home', ownerId }), []);
-  const leaveHome = useCallback(
-    () => setTarget(lastCommunity ? { kind: 'town', communityId: lastCommunity } : null),
+  const visitPlace = useCallback(
+    (placeId: string) => lastCommunity && setTarget({ kind: 'place', placeId, communityId: lastCommunity }),
     [lastCommunity],
+  );
+  // ออกจากบ้าน/ตึก → กลับเมือง และบอกว่าออกมาจากไหน จะได้เกิดหน้าประตูนั้น
+  const leaveHome = useCallback(
+    () =>
+      setTarget((t) => {
+        if (!lastCommunity) return null;
+        // ออกจากบ้านเพื่อน (เข้าทางการ์ดเพื่อน ไม่ได้เดินเข้าประตู) = เกิดกลางลานตามปกติ
+        const from = t?.kind === 'place' ? t.placeId : t?.kind === 'home' && t.ownerId === userId ? 'home' : undefined;
+        return { kind: 'town', communityId: lastCommunity, from };
+      }),
+    [lastCommunity, userId],
   );
 
   useEffect(() => {
@@ -35,7 +48,6 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const userId = session?.user.id;
   const focus = useFocus(userId); // อยู่ระดับแอป นาฬิกาจะไม่หยุดตอนเดินเปลี่ยนห้อง
   const [homeMusic, setHomeMusic] = useState<{ key: string; ownerName: string } | null>(null);
   useEffect(() => {
@@ -90,24 +102,31 @@ export default function App() {
     );
   } else {
     screen = (
+      <ErrorBoundary label="ห้องนี้" onReset={() => setTarget(null)}>
       <WorldView
-        key={target.kind === 'town' ? `town-${target.communityId}` : `home-${target.ownerId}`}
+        key={target.kind === 'home' ? `home-${target.ownerId}` : `${target.kind}-${target.kind === 'place' ? target.placeId : ''}-${target.communityId}`}
         profile={profile}
         target={target}
         onPickCommunity={() => setTarget(null)}
         onEditProfile={() => setEditing(true)}
         onVisitHome={visitHome}
         onLeaveHome={leaveHome}
+        onVisitPlace={visitPlace}
         focus={focus}
         onHomeMusic={setHomeMusic}
       />
+      </ErrorBoundary>
     );
   }
 
   return (
     <>
       {screen}
-      {profile && <MusicPlayer homeMusic={homeMusic} />}
+      {profile && (
+        <ErrorBoundary label="เครื่องเล่นเพลง">
+          <MusicPlayer homeMusic={homeMusic} />
+        </ErrorBoundary>
+      )}
     </>
   );
 }

@@ -80,13 +80,31 @@ export function itemAt(layout: Placed[], x: number, y: number): number {
 }
 
 // ข้อมูลในฐานข้อมูลอาจมาจากเวอร์ชันเก่า: เติมค่าที่หายไป และตัดของที่ไม่รู้จักออก
-function clean(theme: Partial<Theme> | null, layout: unknown): Pick<HomeData, 'theme' | 'layout'> {
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const pickOne = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
+  typeof value === 'string' && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+
+// ข้อมูลในฐานข้อมูลอาจมาจากเวอร์ชันเก่า หรือเจ้าของบ้านยิงค่าแปลกๆ เข้ามาเอง
+// รับเฉพาะค่าที่รู้จัก (ค่าผิดชนิดอาจทำให้หน้าเว็บของคนที่มาส่องพัง) แล้วตัดเฟอร์นิเจอร์ที่ไม่รู้จักออก
+function clean(theme: unknown, layout: unknown): Pick<HomeData, 'theme' | 'layout'> {
+  const t = (theme && typeof theme === 'object' ? theme : {}) as Record<string, unknown>;
+  const color = (v: unknown, fallback: string) => (typeof v === 'string' && HEX_COLOR.test(v) ? v : fallback);
   const list = Array.isArray(layout) ? layout : [];
   return {
-    theme: { ...DEFAULT_THEME, ...theme },
-    layout: list.filter(
-      (p): p is Placed => p && FURNITURE_BY_ID.has(p.i) && Number.isInteger(p.x) && Number.isInteger(p.y),
-    ),
+    theme: {
+      floor: pickOne(t.floor, FLOOR_STYLES.map((f) => f.id), DEFAULT_THEME.floor),
+      floorColor: color(t.floorColor, DEFAULT_THEME.floorColor),
+      wall: pickOne(t.wall, WALL_STYLES.map((w) => w.id), DEFAULT_THEME.wall),
+      wallColor: color(t.wallColor, DEFAULT_THEME.wallColor),
+      music: typeof t.music === 'string' && t.music.length <= 20 ? t.music : undefined,
+    },
+    layout: list
+      .filter(
+        (p): p is Placed =>
+          !!p && typeof p === 'object' && typeof p.i === 'string' && FURNITURE_BY_ID.has(p.i) &&
+          Number.isInteger(p.x) && Number.isInteger(p.y) && p.x >= 0 && p.y >= 0 && p.x < ROOM_COLS && p.y < ROOM_ROWS,
+      )
+      .map((p) => ({ i: p.i, x: p.x, y: p.y })),
   };
 }
 

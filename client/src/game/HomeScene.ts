@@ -151,7 +151,8 @@ export class HomeScene extends WorldScene {
       return;
     }
 
-    const depth = item.kind === 'wall' ? 2 : depthAt(py + item.h * T);
+    // ที่นั่งวาดใต้ตัวละครเสมอ (ตัวละครอยู่ที่ความลึก 5 ขึ้นไป) ของอื่นเรียงตามแนวลึกเหมือนเดิม
+    const depth = item.kind === 'wall' ? 2 : item.seat ? 1.5 : depthAt(py + item.h * T);
     for (let dy = 0; dy < item.h; dy++) {
       for (let dx = 0; dx < item.w; dx++) {
         const img = this.add.image(px + dx * T, py + dy * T, 'indoor', frameOf(item, dx, dy)).setOrigin(0).setDepth(depth);
@@ -159,8 +160,8 @@ export class HomeScene extends WorldScene {
       }
     }
 
-    // ของบนพื้นเดินชน (เว้นขอบบน 6px ไว้ให้ตัวละครเดินไปยืนหลังของได้นิดหน่อย)
-    if (item.kind === 'floor') {
+    // ของบนพื้นเดินชน ยกเว้นที่นั่ง (เว้นขอบบน 6px ไว้ให้ตัวละครเดินไปยืนหลังของได้นิดหน่อย)
+    if (item.kind === 'floor' && !item.seat) {
       const block = this.add.zone(px, py + 6, item.w * T, item.h * T - 6).setOrigin(0);
       this.blockers.add(block); // ถูกลบพร้อม blockers.clear() ตอนวาดห้องใหม่
     }

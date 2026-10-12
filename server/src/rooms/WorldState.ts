@@ -13,6 +13,7 @@ export class Player extends Schema {
 
   // ค่าที่ไม่มี @type อยู่แค่ในเซิร์ฟเวอร์ ไม่ส่งให้ใคร
   lastMoveAt = 0;
+  moveBudget = 0; // ระยะที่ยังเดินได้ (พิกเซล) สะสมตามเวลา ดู WorldRoom
   lastChatAt = 0;
 }
 

@@ -1,6 +1,6 @@
 // รายการเฟอร์นิเจอร์ที่วางในห้องได้
 // tile = [คอลัมน์, แถว] ของช่องซ้ายบนใน roguelike-indoor.png (แผ่นภาพ 27 คอลัมน์ ช่องละ 16px เว้นระยะ 1px)
-// kind: floor = วางบนพื้น เดินชน, wall = แขวนผนัง, rug = พรมปูพื้น เดินทับได้
+// kind: floor = วางบนพื้น เดินชน (ยกเว้นที่นั่ง seat), wall = แขวนผนัง, rug = พรมปูพื้น เดินทับได้
 
 export type FurnitureKind = 'floor' | 'wall' | 'rug';
 
@@ -12,6 +12,7 @@ export type Furniture = {
   h: number;
   tile?: [col: number, row: number];
   color?: string; // สำหรับพรม (วาดด้วยโค้ด)
+  seat?: boolean; // ที่นั่ง: เดินทับได้ ไม่ชน (ยืนบนเก้าอี้ = นั่งที่โต๊ะ)
 };
 
 export const SHEET_COLUMNS = 27;
@@ -30,13 +31,13 @@ export const FURNITURE: Furniture[] = [
   { id: 'table_cloth', name: 'โต๊ะปูผ้า', kind: 'floor', w: 1, h: 1, tile: [0, 11] },
   { id: 'table_cloth_long', name: 'โต๊ะปูผ้ายาว', kind: 'floor', w: 3, h: 1, tile: [0, 9] },
   // --- เก้าอี้ ---
-  { id: 'chair_front', name: 'เก้าอี้ (หันหน้า)', kind: 'floor', w: 1, h: 1, tile: [0, 2] },
-  { id: 'chair_back', name: 'เก้าอี้ (หันหลัง)', kind: 'floor', w: 1, h: 1, tile: [1, 2] },
-  { id: 'chair_right', name: 'เก้าอี้ (หันขวา)', kind: 'floor', w: 1, h: 1, tile: [2, 2] },
-  { id: 'chair_left', name: 'เก้าอี้ (หันซ้าย)', kind: 'floor', w: 1, h: 1, tile: [3, 2] },
-  { id: 'stool', name: 'เก้าอี้กลม', kind: 'floor', w: 1, h: 1, tile: [17, 3] },
-  { id: 'armchair_orange', name: 'โซฟาเดี่ยวส้ม', kind: 'floor', w: 1, h: 1, tile: [14, 9] },
-  { id: 'armchair_green', name: 'โซฟาเดี่ยวเขียว', kind: 'floor', w: 1, h: 1, tile: [14, 11] },
+  { id: 'chair_front', name: 'เก้าอี้ (หันหน้า)', kind: 'floor', w: 1, h: 1, tile: [0, 2], seat: true },
+  { id: 'chair_back', name: 'เก้าอี้ (หันหลัง)', kind: 'floor', w: 1, h: 1, tile: [1, 2], seat: true },
+  { id: 'chair_right', name: 'เก้าอี้ (หันขวา)', kind: 'floor', w: 1, h: 1, tile: [2, 2], seat: true },
+  { id: 'chair_left', name: 'เก้าอี้ (หันซ้าย)', kind: 'floor', w: 1, h: 1, tile: [3, 2], seat: true },
+  { id: 'stool', name: 'เก้าอี้กลม', kind: 'floor', w: 1, h: 1, tile: [17, 3], seat: true },
+  { id: 'armchair_orange', name: 'โซฟาเดี่ยวส้ม', kind: 'floor', w: 1, h: 1, tile: [14, 9], seat: true },
+  { id: 'armchair_green', name: 'โซฟาเดี่ยวเขียว', kind: 'floor', w: 1, h: 1, tile: [14, 11], seat: true },
   // --- ของใช้ ---
   { id: 'bookshelf', name: 'ชั้นวางของ', kind: 'floor', w: 1, h: 1, tile: [19, 17] },
   { id: 'counter', name: 'ตู้ครัว', kind: 'floor', w: 1, h: 1, tile: [0, 12] },

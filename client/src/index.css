@@ -1178,3 +1178,109 @@ button.icon {
   display: block;
   border-radius: 4px;
 }
+
+/* ===================================================================
+   รีวิวดีไซน์รอบ 2
+   =================================================================== */
+
+.reconnecting {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  z-index: 7;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #5a3d2b;
+  color: #fff3c4;
+}
+
+.topbar .faceset {
+  margin: -3px 0; /* รูปหน้า 38px ไม่ดันแถบด้านบนให้สูงขึ้น */
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  .app {
+    --sheet-h: max(200px, calc(50dvh - 30vw - 76px));
+  }
+  /* มีแผงเปิดอยู่: การ์ดเพื่อนลอยเหนือแผง ไม่ทับช่องพิมพ์แชท */
+  .app:has(.slot.show) .player-card,
+  .app:has(.todo-panel) .player-card {
+    bottom: calc(80px + var(--sheet-h) + env(safe-area-inset-bottom, 0px));
+  }
+  /* ตอนแต่งห้อง: เก็บรายการสถานีเพลง (วิดีโอยังโชว์ตามกฎ YouTube) และซ่อนการ์ดเพื่อน */
+  .app:has(.editor) ~ .music .music-body {
+    display: none;
+  }
+  .app:has(.editor) .player-card {
+    display: none;
+  }
+  /* เลือกตัวละครบนมือถือ: ช่องละ 48px (จอ 390px ได้ 6 คอลัมน์) ปัดน้อยลง */
+  .panel {
+    padding: 16px;
+  }
+  .character-grid {
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 4px;
+    max-height: 38dvh;
+  }
+  .character-pick {
+    padding: 2px;
+  }
+}
+
+/* ตอนแต่งห้อง: ย่อพื้นที่เกมให้พ้นแผงแต่งห้อง จะได้แตะวางของได้ครบทุกช่อง */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app:has(.editor) .game {
+    width: calc(100% - 336px - env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 601px) and (min-height: 501px) {
+  .app:has(.editor) .game {
+    width: calc(100% - 336px);
+  }
+}
+
+/* ===================================================================
+   รีวิวดีไซน์รอบยืนยัน
+   =================================================================== */
+
+/* แถบ "สัญญาณหลุด" ไม่บังการกด และบนมือถือย้ายไปขอบบนของจอเกม (ไม่ทับกล่องเพลง) */
+.reconnecting {
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .reconnecting {
+    top: calc(50dvh - 30vw + 8px);
+  }
+}
+
+/* มือถือแนวนอน: แผงอยู่คอลัมน์ขวา การ์ดเพื่อนจึงอยู่มุมซ้ายล่าง ไม่ลอยขึ้นไปทับแถบด้านบน */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app:has(.slot.show) .player-card,
+  .app:has(.todo-panel) .player-card {
+    bottom: 8px;
+    left: 8px;
+    transform: none;
+  }
+  /* แต่งห้อง: ย้ายเพลงลงล่าง จะได้แขวนรูปบนผนังฝั่งซ้ายได้ */
+  .app:has(.editor) ~ .music {
+    top: auto;
+    bottom: 8px;
+  }
+}
+
+/* คอม: ตอนแต่งห้องซ่อนแชท นาฬิกา และรายการสถานีเพลง (เหมือนบนมือถือ) จะได้วางของได้ทุกมุมห้อง */
+@media (min-width: 601px) and (min-height: 501px) {
+  .app:has(.editor) .chat,
+  .app:has(.editor) .pomodoro {
+    display: none;
+  }
+  .app:has(.editor) ~ .music .music-body {
+    display: none;
+  }
+}

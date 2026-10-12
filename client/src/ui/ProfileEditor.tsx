@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CHARACTERS, DEFAULT_CHARACTER } from '../lib/characters';
 import { saveProfile, USERNAME_RULE, type Profile } from '../lib/profile';
 import { CharacterPreview } from './CharacterPreview';
@@ -17,6 +17,16 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
   const [character, setCharacter] = useState(profile?.avatar.character ?? DEFAULT_CHARACTER);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // เลื่อนตาราง (เฉพาะตาราง ไม่เลื่อนทั้งหน้า) ให้เห็นตัวที่เลือกอยู่ ทั้งตอนเปิดหน้าและตอนกดสุ่ม
+  useEffect(() => {
+    const grid = gridRef.current;
+    const sel = grid?.querySelector<HTMLElement>('.selected');
+    if (!grid || !sel) return;
+    const off = sel.getBoundingClientRect().top - grid.getBoundingClientRect().top;
+    if (off < 0 || off > grid.clientHeight - sel.offsetHeight) grid.scrollTop += off - grid.clientHeight / 2 + sel.offsetHeight / 2;
+  }, [character]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -49,8 +59,15 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
           ชื่อในเกม
           <input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={16} placeholder="เช่น ภูมิ_เรียนเก่ง" />
         </label>
-        <span className="muted">เลือกตัวละคร ({CHARACTERS.length} ตัว)</span>
-        <div className="character-grid">
+        <div className="row">
+          <span className="muted" style={{ flex: 1 }}>
+            เลือกตัวละคร ({CHARACTERS.length} ตัว)
+          </span>
+          <button type="button" onClick={() => setCharacter(CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)])}>
+            🎲 สุ่ม
+          </button>
+        </div>
+        <div className="character-grid" ref={gridRef}>
           {CHARACTERS.map((c) => (
             <button
               key={c}

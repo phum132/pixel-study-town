@@ -11,6 +11,7 @@ A cozy pixel-art town where people study together. Walk around with friends, cha
 - 🏘️ **Pixel town with 4 districts** (library, café, homes, lake park) you walk around in (keyboard, or tap-and-drag on mobile)
 - 👤 **Accounts and characters**: email login and 88 pixel characters to choose from
 - 👥 **Real-time multiplayer**: see others walk, chat with speech bubbles, join one of 6 study communities
+- 🏯 **Public buildings** (library, quiet room, café, ramen shop) shared by everyone in the community, with seats you can stand on to sit together
 - 🏠 **Personal homes**: place furniture, pick floor and wall themes, visit friends' homes, or make yours private
 - 📝 **To-do list**: choose per task whether visitors can see it
 - ⏱️ **Pomodoro timer** (15/25/50 min plus breaks). Focusing players show 📖 above their heads.
@@ -67,7 +68,7 @@ supabase/migrations/     SQL files that create the database tables and rules
 
 1. Create a free project at [supabase.com](https://supabase.com) (Singapore region if you are in Southeast Asia).
 2. Open **SQL Editor → New query** and run each file in `supabase/migrations/` **once, in order**:
-   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql`
+   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql`
    (`005_snake_fix.sql` is only for databases that ran an early version of 004.)
 3. For local testing only: **Authentication → Sign In / Providers → Email** → turn off **Confirm email**, so you can make test accounts without real inboxes. Turn it back on before going public.
 

@@ -124,13 +124,15 @@ export function SnakeArcade({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (phase.kind !== 'playing') return;
     const ctx = canvasRef.current!.getContext('2d')!;
-    const id = setInterval(() => {
-      const g = gameRef.current!;
-      g.step(queueRef.current.shift());
-      draw(ctx, g);
-      setScore(g.score);
-      if (!g.dead) return;
+    let done = false;
+
+    // จบเกม: หยุดนาฬิกา แล้วส่งการกดปุ่มให้ฐานข้อมูลนับคะแนน (เรียกได้ครั้งเดียว)
+    const finish = () => {
+      if (done) return;
+      done = true;
       clearInterval(id);
+      const g = gameRef.current!;
+      g.dead = true;
       setPhase({ kind: 'checking', clientScore: g.score });
       finishSnake(runRef.current, g.inputs)
         .then((r) => {
@@ -138,8 +140,26 @@ export function SnakeArcade({ onClose }: { onClose: () => void }) {
           loadTop();
         })
         .catch((err) => setPhase({ kind: 'error', message: err instanceof Error ? err.message : String(err) }));
+    };
+
+    const id = setInterval(() => {
+      const g = gameRef.current!;
+      g.step(queueRef.current.shift());
+      draw(ctx, g);
+      setScore(g.score);
+      if (g.dead) finish();
     }, TICK_MS);
-    return () => clearInterval(id);
+
+    // สลับแท็บ/สลับแอประหว่างเล่น: เบราว์เซอร์จะชะลอหรือหยุดเกม ทำให้เวลาไม่ตรงและคะแนนไม่ผ่าน
+    // จึงจบเกมและส่งคะแนนทันที (มือถือหยุด JavaScript ทั้งหมดตอนอยู่เบื้องหลัง รอรอบถัดไปไม่ได้)
+    const onHide = () => {
+      if (document.hidden) finish();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onHide);
+    };
   }, [phase.kind, loadTop]);
 
   // มือถือ: ปัดนิ้วบนกระดาน
