@@ -1,10 +1,13 @@
 import list from './characterList.json';
+import { SKINS, skinKey } from './skins';
 
 // ตัวละครจากชุด Ninja Adventure (CC0) ไฟล์อยู่ที่ public/assets/characters/<ชื่อ>.png และ <ชื่อ>-face.png
 // characterList.json สร้างตอนคัดลอกภาพ (เฉพาะตัวที่เป็นแผ่นภาพมาตรฐาน 64x112)
 //
 // แผ่นภาพหนึ่งตัว: 4 คอลัมน์ = ทิศ (ลง ขึ้น ซ้าย ขวา), แถว 1-4 = ท่าเดิน, แถวที่เหลือ (โจมตี กระโดด) ไม่ได้ใช้
-export const CHARACTERS: string[] = list;
+export const BASE_CHARACTERS: string[] = list; // เลือกได้ฟรี
+// ทุกตัวที่เกมรู้จัก = ตัวฟรี + สกินอนิเมะ (สกินต้องได้มาจากร้านค้า ดู lib/skins.ts)
+export const CHARACTERS: string[] = [...list, ...SKINS.map((s) => skinKey(s.id))];
 export const DEFAULT_CHARACTER = 'Boy';
 
 // ข้อมูลหน้าตาที่เก็บใน profiles.avatar

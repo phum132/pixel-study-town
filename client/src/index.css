@@ -1785,3 +1785,409 @@ button.icon {
   margin: 0;
   text-align: center;
 }
+
+/* ===================================================================
+   สนามรบ
+   =================================================================== */
+.arena-intro {
+  max-width: 460px;
+}
+
+.arena-hud {
+  position: absolute;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(460px, calc(100% - 16px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.arena-hud .bar {
+  position: relative;
+  height: 18px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #2b2140e6;
+  overflow: hidden;
+}
+
+.arena-hud .bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  transition: width 0.15s linear;
+}
+
+.arena-hud .bar.hp i {
+  background: #e04f5f;
+}
+
+.arena-hud .bar.xp {
+  height: 12px;
+}
+
+.arena-hud .bar.xp i {
+  background: #4fd1c5;
+}
+
+.arena-hud .bar.boss i {
+  background: #a04fd1;
+}
+
+.arena-hud .bar span {
+  position: relative;
+  display: block;
+  font-size: 13px;
+  line-height: 12px;
+  text-align: center;
+  text-shadow: 1px 0 #120d1a, -1px 0 #120d1a, 0 1px #120d1a, 0 -1px #120d1a;
+}
+
+.arena-hud .bar.xp span {
+  font-size: 11px;
+  line-height: 6px;
+}
+
+.arena-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 1px 0 #120d1a, -1px 0 #120d1a, 0 1px #120d1a, 0 -1px #120d1a;
+}
+
+.arena-stats button {
+  padding: 0 8px;
+  pointer-events: auto;
+}
+
+.arena-toast {
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 6px 12px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #5a2f45;
+  text-align: center;
+  pointer-events: none;
+}
+
+.levelup {
+  max-width: 440px;
+}
+
+.upgrade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upgrade-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  background: #3a2f55;
+  box-shadow: 0 4px 0 var(--panel-edge);
+}
+
+.upgrade-card:hover,
+.upgrade-card:focus-visible {
+  background: #4a3d6e;
+}
+
+.upgrade-card .emoji {
+  font-size: 30px;
+}
+
+.upgrade-card > span:nth-child(2) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.upgrade-card strong small {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.upgrade-card > span small {
+  color: var(--muted);
+}
+
+.upgrade-card kbd {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.arena-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  text-align: left;
+}
+
+/* กล่องเพลงในสนามรบ: ลงไปอยู่มุมล่าง ไม่บังแถบเลือด */
+.app.arena ~ .music {
+  top: auto;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (pointer: coarse) {
+  .upgrade-card kbd {
+    display: none;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .levelup .upgrade-list {
+    flex-direction: row;
+  }
+  .levelup .upgrade-card {
+    flex: 1;
+    flex-direction: column;
+    text-align: center;
+  }
+  .levelup {
+    max-width: 680px;
+    padding: 12px;
+  }
+}
+
+/* ===================================================================
+   แรงค์ + กระเป๋าเหรียญ
+   =================================================================== */
+.topbar .rank-chip {
+  color: var(--accent);
+}
+
+.reward-toast {
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 8px 16px;
+  border: 3px solid var(--accent-dark);
+  border-radius: 10px;
+  background: #3a2f55;
+  color: var(--accent);
+  font-size: 18px;
+  text-align: center;
+  box-shadow: 0 4px 0 var(--panel-edge);
+  pointer-events: none;
+  animation: reward-pop 0.35s ease-out;
+}
+
+@keyframes reward-pop {
+  from {
+    transform: translate(-50%, -12px);
+    opacity: 0;
+  }
+}
+
+.ranks-panel {
+  max-width: 480px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+
+.my-rank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.my-rank > div {
+  flex: 1;
+}
+
+.rank-emoji {
+  font-size: 40px;
+}
+
+.rank-bar {
+  height: 10px;
+  margin: 4px 0;
+  border: 2px solid var(--panel-edge);
+  border-radius: 6px;
+  background: #2b2140;
+  overflow: hidden;
+}
+
+.rank-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.wallet-log .rank-name {
+  font-size: 14px;
+}
+
+.arena-award {
+  margin: 0;
+  color: var(--accent);
+  font-size: 18px;
+}
+
+/* ---------- สกินอนิเมะในหน้าเลือกตัวละคร ---------- */
+.character-grid.skins .character-pick.skin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-width: 3px;
+  border-style: solid;
+}
+
+.character-pick.skin small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ---------- สกิลในสนามรบ ---------- */
+.my-special {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #3a2f55;
+}
+
+.skill-bar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.skill-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 8px;
+  background: #2b2140e6;
+  font-size: 13px;
+}
+
+.skill-slot i {
+  font-style: normal;
+  letter-spacing: -2px;
+}
+
+.skill-slot.fused {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.skill-slot small {
+  position: absolute;
+  right: 1px;
+  bottom: -1px;
+  font-size: 11px;
+  color: var(--accent);
+  text-shadow: 1px 0 #120d1a, -1px 0 #120d1a, 0 1px #120d1a, 0 -1px #120d1a;
+}
+
+.ult-button {
+  position: absolute;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--fill), #2b2140 0);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.ult-button small {
+  font-size: 11px;
+  text-shadow: 1px 0 #120d1a, -1px 0 #120d1a, 0 1px #120d1a, 0 -1px #120d1a;
+}
+
+.ult-button:disabled {
+  opacity: 0.85;
+  cursor: default;
+}
+
+.ult-button.ready {
+  animation: ult-ready 0.8s infinite alternate;
+}
+
+@keyframes ult-ready {
+  to {
+    transform: scale(1.1);
+    box-shadow: 0 0 18px var(--accent);
+  }
+}
+
+.ult-banner {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  padding: 10px 0;
+  background: linear-gradient(90deg, transparent, #12071ccc 20%, #12071ccc 80%, transparent);
+  color: #fff3c4;
+  font-size: clamp(26px, 6vw, 48px);
+  text-align: center;
+  text-shadow: 0 0 12px var(--accent), 2px 2px 0 #c94a4a;
+  pointer-events: none;
+  animation: ult-banner 1.6s ease-out forwards;
+}
+
+@keyframes ult-banner {
+  0% {
+    transform: translateX(-60%) skewX(-12deg);
+    opacity: 0;
+  }
+  15%,
+  75% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(40%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+.upgrade-card.fuse {
+  border-color: var(--accent);
+  background: #4a3a20;
+}
+
+/* กล่องเพลงอยู่มุมซ้ายล่างในสนามรบ แถบสกิลอยู่กลาง ปุ่มท่าไม้ตายอยู่ขวา */
+@media (max-width: 600px) {
+  .skill-bar {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+}

@@ -10,6 +10,8 @@ import { ProfileEditor } from './ui/ProfileEditor';
 import { CommunityPicker } from './ui/CommunityPicker';
 import { WorldView, type WorldTarget } from './ui/WorldView';
 import { AdventureView } from './ui/AdventureView';
+import { SurvivorView } from './ui/SurvivorView';
+import { rankOf } from './lib/wallet';
 
 // ลำดับหน้าจอ: ล็อกอิน → สร้างตัวละคร (ครั้งแรก) → เลือกคอมมู → เข้าเมือง ⇄ บ้าน
 export default function App() {
@@ -21,7 +23,8 @@ export default function App() {
   // ตอนนี้อยู่ที่ไหน (null = หน้าเลือกคอมมู) และคอมมูล่าสุด (ไว้กลับจากบ้าน)
   const [target, setTarget] = useState<WorldTarget | null>(null);
   const [lastCommunity, setLastCommunity] = useState<string | null>(null);
-  const [adventure, setAdventure] = useState(false); // อยู่ในด่านคณิต (ออกจากเมืองชั่วคราว)
+  // ออกจากเมืองชั่วคราว: math = ด่านคณิต, arena = สนามรบ
+  const [adventure, setAdventure] = useState<'math' | 'arena' | null>(null);
 
   const goTown = useCallback((communityId: string) => {
     setLastCommunity(communityId);
@@ -33,12 +36,12 @@ export default function App() {
     [lastCommunity],
   );
   // ออกจากบ้าน/ตึก → กลับเมือง และบอกว่าออกมาจากไหน จะได้เกิดหน้าประตูนั้น
-  const openAdventure = useCallback(() => setAdventure(true), []);
-  // ออกจากด่าน → กลับมายืนหน้าประตูด่านในลานเมือง
+  const openAdventure = useCallback((gate: string) => setAdventure(gate === 'arena' ? 'arena' : 'math'), []);
+  // ออกจากด่าน/สนามรบ → กลับมายืนหน้าประตูนั้นในลานเมือง
   const leaveAdventure = useCallback(() => {
-    setAdventure(false);
-    setTarget(lastCommunity ? { kind: 'town', communityId: lastCommunity, from: 'math' } : null);
-  }, [lastCommunity]);
+    setTarget(lastCommunity ? { kind: 'town', communityId: lastCommunity, from: adventure ?? undefined } : null);
+    setAdventure(null);
+  }, [lastCommunity, adventure]);
   const leaveHome = useCallback(
     () =>
       setTarget((t) => {
@@ -72,6 +75,45 @@ export default function App() {
     };
   }, [userId]);
 
+  // ได้รางวัล (โฟกัส งานเสร็จ ด่าน สนามรบ) → โหลด XP/เหรียญใหม่ แล้วบอกว่าได้เท่าไร
+  const [reward, setReward] = useState('');
+  useEffect(() => {
+    if (!userId) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      clearTimeout(timer);
+      // รอฐานข้อมูลบันทึกเสร็จสักครู่ (หลายอย่างเกิดพร้อมกันก็โหลดครั้งเดียว)
+      timer = setTimeout(() => {
+        fetchProfile(userId)
+          .then((p) => {
+            if (!p) return;
+            setLoaded((prev) => {
+              const old = prev?.userId === userId ? prev.profile : null;
+              if (old) {
+                const coins = p.coins - old.coins;
+                const xp = p.xp - old.xp;
+                const parts = [coins > 0 && `+${coins} 🪙`, xp > 0 && `+${xp} XP`].filter(Boolean);
+                const up = rankOf(p.xp).name !== rankOf(old.xp).name ? ` • แรงค์ใหม่ ${rankOf(p.xp).emoji} ${rankOf(p.xp).name}!` : '';
+                if (parts.length) setReward(parts.join(' ') + up);
+              }
+              return { userId, profile: p };
+            });
+          })
+          .catch(() => {}); // โหลดไม่ได้ก็ใช้ค่าเดิมไปก่อน
+      }, 600);
+    };
+    window.addEventListener('pst-wallet', refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pst-wallet', refresh);
+    };
+  }, [userId]);
+  useEffect(() => {
+    if (!reward) return;
+    const id = setTimeout(() => setReward(''), 4000);
+    return () => clearTimeout(id);
+  }, [reward]);
+
   const current = loaded && loaded.userId === userId ? loaded : undefined;
   const profile = current?.profile;
   const error = current?.error;
@@ -102,8 +144,12 @@ export default function App() {
     );
   } else if (adventure) {
     screen = (
-      <ErrorBoundary label="ด่านคณิต" onReset={leaveAdventure}>
-        <AdventureView profile={profile} onExit={leaveAdventure} />
+      <ErrorBoundary label={adventure === 'arena' ? 'สนามรบ' : 'ด่านคณิต'} onReset={leaveAdventure}>
+        {adventure === 'arena' ? (
+          <SurvivorView profile={profile} onExit={leaveAdventure} />
+        ) : (
+          <AdventureView profile={profile} onExit={leaveAdventure} />
+        )}
       </ErrorBoundary>
     );
   } else if (!target) {
@@ -137,6 +183,11 @@ export default function App() {
   return (
     <>
       {screen}
+      {reward && (
+        <div className="reward-toast" role="status">
+          {reward}
+        </div>
+      )}
       {profile && (
         <ErrorBoundary label="เครื่องเล่นเพลง">
           <MusicPlayer homeMusic={homeMusic} />

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CHARACTERS, DEFAULT_CHARACTER } from '../lib/characters';
+import { BASE_CHARACTERS, DEFAULT_CHARACTER } from '../lib/characters';
+import { RARITY, SKINS, SKIN_BY_KEY, skinKey } from '../lib/skins';
 import { saveProfile, USERNAME_RULE, type Profile } from '../lib/profile';
 import { CharacterPreview } from './CharacterPreview';
 import { Faceset } from './Faceset';
@@ -48,6 +49,7 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
     }
   }
 
+  const lockedSkin = SKIN_BY_KEY.get(character); // ยังไม่มีร้านค้า = สกินทุกตัวยังล็อก
   return (
     <div className="screen">
       <form className="panel wide" onSubmit={submit}>
@@ -61,14 +63,14 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
         </label>
         <div className="row">
           <span className="muted" style={{ flex: 1 }}>
-            เลือกตัวละคร ({CHARACTERS.length} ตัว)
+            เลือกตัวละคร ({BASE_CHARACTERS.length} ตัว)
           </span>
-          <button type="button" onClick={() => setCharacter(CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)])}>
+          <button type="button" onClick={() => setCharacter(BASE_CHARACTERS[Math.floor(Math.random() * BASE_CHARACTERS.length)])}>
             🎲 สุ่ม
           </button>
         </div>
         <div className="character-grid" ref={gridRef}>
-          {CHARACTERS.map((c) => (
+          {BASE_CHARACTERS.map((c) => (
             <button
               key={c}
               type="button"
@@ -81,7 +83,32 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
             </button>
           ))}
         </div>
-        <button className="primary" disabled={busy}>
+        <span className="muted">✨ สกินอนิเมะ (กดเพื่อลองดู • แลกด้วยเหรียญในร้านค้า เร็วๆ นี้)</span>
+        <div className="character-grid skins">
+          {SKINS.map((s) => {
+            const key = skinKey(s.id);
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`character-pick skin ${character === key ? 'selected' : ''}`}
+                style={{ borderColor: RARITY[s.rarity].color }}
+                onClick={() => setCharacter(key)}
+                title={`${s.name} (${RARITY[s.rarity].name})`}
+                aria-label={`${s.name} สกิน${RARITY[s.rarity].name}`}
+              >
+                <Faceset character={key} size={38} />
+                <small>🔒 {s.name}</small>
+              </button>
+            );
+          })}
+        </div>
+        {lockedSkin && (
+          <p className="muted small">
+            👀 กำลังลองสกิน {lockedSkin.name} ({RARITY[lockedSkin.rarity].name} {RARITY[lockedSkin.rarity].price} 🪙) — ยังใส่จริงไม่ได้ ต้องแลกในร้านค้าก่อน
+          </p>
+        )}
+        <button className="primary" disabled={busy || !!lockedSkin}>
           {busy ? 'กำลังบันทึก...' : profile ? 'บันทึก' : 'เข้าเมือง!'}
         </button>
         {onCancel && (

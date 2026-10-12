@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
+import { notifyWallet } from './wallet';
 
 // ฐานข้อมูลเป็นคนจับเวลาจริง (ดู 003_todos_focus.sql) เบราว์เซอร์แค่นับถอยหลังให้ดู
 // ถ้าแก้นาฬิกาในเครื่อง นาทีที่ได้ก็ยังคิดจากนาฬิกาของฐานข้อมูลอยู่ดี
@@ -73,6 +74,7 @@ export function useFocus(userId: string | undefined) {
     }
     const result = data as FocusResult | null;
     setLastResult(result);
+    notifyWallet(); // จบรอบโฟกัส = ได้ XP (ครบรอบได้เหรียญด้วย)
     if (result?.completed) {
       beep();
       setState({ phase: 'break', endsAt: Date.now() + BREAK_MINUTES * 60_000 });

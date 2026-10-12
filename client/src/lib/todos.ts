@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { notifyWallet } from './wallet';
 
 export type Todo = { id: string; text: string; done: boolean; done_at: string | null; is_public: boolean };
 
@@ -20,6 +21,7 @@ export async function addTodo(text: string, isPublic: boolean): Promise<Todo> {
 export async function updateTodo(id: string, patch: Partial<Pick<Todo, 'text' | 'done' | 'is_public'>>): Promise<Todo> {
   const { data, error } = await supabase.from('todos').update(patch).eq('id', id).select(COLUMNS).single();
   if (error) throw error;
+  if (patch.done) notifyWallet(); // งานเสร็จ = ได้ XP + เหรียญ (วันละ 20 อัน)
   return data;
 }
 

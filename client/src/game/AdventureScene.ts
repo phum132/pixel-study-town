@@ -257,7 +257,7 @@ export class AdventureScene extends Phaser.Scene {
     const s = m.sprite;
     const scale = m.foe.elite ? 1.5 : 1;
     const top = s.y - (m.foe.boss ? 22 : 8 * scale);
-    m.label.setPosition(s.x, top - (m.bar ? 4 : 1));
+    m.label.setPosition(s.x, top - (m.bar ? 6 : 1));
     s.setDepth(depthAt(s.y + (m.foe.boss ? 22 : 8 * scale)));
     if (m.bar) {
       m.bar.clear();

@@ -6,6 +6,7 @@ import {
   type AnswerResult, type Level, type Question, type Run, type Stage,
 } from '../lib/adventure';
 import { PhaserGame } from '../game/PhaserGame';
+import { notifyWallet } from '../lib/wallet';
 
 type Battle =
   | { phase: 'loading'; touched: number }
@@ -177,6 +178,7 @@ export function AdventurePlay({ profile, level, stage, onGo, onBack }: Props) {
       const r = battle.res;
       endedRef.current = true;
       setEnd({ won: r.status === 'won', stars: r.stars ?? 0, best: r.best_stars ?? 0 });
+      if (r.status === 'won') notifyWallet(); // ดาวใหม่ = ได้เหรียญ + XP
     }
     bridge.emit('battle-end', { index: battle.touched });
     setBattle(null);

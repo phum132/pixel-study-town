@@ -70,8 +70,10 @@ export class TownScene extends WorldScene {
     const colliders: Phaser.Types.Physics.Arcade.ArcadeColliderType[] = [walls, block];
     const spot = map.findObject('objects', (o) => o.name === 'arcade');
     if (spot) colliders.push(this.buildArcade(spot.x!, spot.y!));
-    const gate = map.findObject('objects', (o) => o.name === 'gate');
-    if (gate) colliders.push(this.buildGate(gate.x!, gate.y!));
+    for (const gate of map.filterObjects('objects', (o) => o.name === 'gate') ?? []) {
+      const subject = (gate.properties as { name: string; value: string }[] | undefined)?.find((p) => p.name === 'subject')?.value ?? 'math';
+      colliders.push(this.buildGate(gate.x!, gate.y!, subject));
+    }
     this.keyE = this.input.keyboard!.addKey('E', false);
 
     return { width: map.widthInPixels, height: map.heightInPixels, colliders, zoom: 2, followCamera: true };
@@ -93,13 +95,13 @@ export class TownScene extends WorldScene {
     return block;
   }
 
-  // ประตูด่านคณิตกว้าง 2 ช่อง สูง 2 ช่อง (x, y = มุมซ้ายบน) เข้าได้จากด้านล่าง
-  private buildGate(x: number, y: number) {
-    const sprite = this.add.image(x, y + 32, gateTexture(this)).setOrigin(0, 1).setDepth(depthAt(y + 32));
+  // ประตูกว้าง 2 ช่อง สูง 2 ช่อง (x, y = มุมซ้ายบน) / subject: math = ด่านคณิต, arena = สนามรบ
+  private buildGate(x: number, y: number, subject: string) {
+    const sprite = this.add.image(x, y + 32, gateTexture(this, subject)).setOrigin(0, 1).setDepth(depthAt(y + 32));
     sprite.setInteractive({ useHandCursor: true });
     const touch = this.sys.game.device.input.touch;
-    const hint = makeLabel(this, touch ? 'แตะประตู หรือกด E ⚔️' : 'กด E เข้าด่าน ⚔️', '#ffcf5c').setOrigin(0.5, 1).setPosition(x + 16, y - 22).setVisible(false); // ลอยเหนือป้ายชื่อประตู
-    const usable: Usable = { x: x + 16, y: y + 30, hint, use: () => this.bridge.emit('open-gate', 'math') };
+    const hint = makeLabel(this, touch ? 'แตะประตู หรือกด E' : subject === 'arena' ? 'กด E เข้าสนามรบ' : 'กด E เข้าด่าน', '#ffcf5c').setOrigin(0.5, 1).setPosition(x + 16, y - 22).setVisible(false); // ลอยเหนือป้ายชื่อประตู
+    const usable: Usable = { x: x + 16, y: y + 30, hint, use: () => this.bridge.emit('open-gate', subject) };
     this.usables.push(usable);
     sprite.on('pointerdown', () => this.tryUse(usable));
 
@@ -167,9 +169,10 @@ function arcadeTexture(scene: Phaser.Scene) {
   return key;
 }
 
-// ภาพประตูด่านคณิต 32x32 วาดด้วยโค้ด: ซุ้มประตูหิน หลังคาแดง ข้างในเป็นประตูวนสีม่วง มีเครื่องหมายบวกลบคูณหาร
-function gateTexture(scene: Phaser.Scene) {
-  const key = 'math-gate';
+// ภาพประตู 32x32 วาดด้วยโค้ด: ซุ้มประตูหิน หลังคาแดง ข้างในเป็นประตูวน (ด่านคณิตสีม่วง / สนามรบสีแดงส้ม)
+function gateTexture(scene: Phaser.Scene, subject: string) {
+  const key = `gate-${subject}`;
+  const [p0, p1, p2, p3] = subject === 'arena' ? ['#6b2a2a', '#b84a3a', '#e8784a', '#ffc08a'] : ['#3d2a6b', '#6b4fa3', '#9b7fe0', '#c9b8ff'];
   if (scene.textures.exists(key)) return key;
   const tex = scene.textures.createCanvas(key, 32, 32)!;
   const ctx = tex.getContext();
@@ -187,10 +190,10 @@ function gateTexture(scene: Phaser.Scene) {
   rect('#2b1d26', 22, 10, 7, 22); // เสาขวา
   rect('#8a8399', 23, 10, 5, 21);
   rect('#a9a2b8', 23, 10, 1, 21);
-  rect('#3d2a6b', 10, 10, 12, 22); // ประตูวน
-  rect('#6b4fa3', 11, 12, 10, 19);
-  rect('#9b7fe0', 13, 14, 6, 15);
-  rect('#c9b8ff', 15, 17, 2, 9);
+  rect(p0, 10, 10, 12, 22); // ประตูวน
+  rect(p1, 11, 12, 10, 19);
+  rect(p2, 13, 14, 6, 15);
+  rect(p3, 15, 17, 2, 9);
   rect('#ffcf5c', 12, 4, 8, 1); // ป้าย + − × ÷ บนหลังคา
   rect('#ffcf5c', 15, 3, 2, 3);
   rect('#2b1d26', 13, 31, 6, 1);

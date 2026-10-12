@@ -12,6 +12,8 @@ import { ChatBox } from './ChatBox';
 import { RoomEditor } from './RoomEditor';
 import { PLACE_BY_ID } from '../lib/places';
 import { PomodoroTimer } from './PomodoroTimer';
+import { RanksPanel } from './RanksPanel';
+import { rankOf } from '../lib/wallet';
 
 type MobileTab = 'none' | 'chat' | 'focus' | 'todo';
 import { TodoPanel } from './TodoPanel';
@@ -31,7 +33,7 @@ type Props = {
   onVisitHome: (ownerId: string) => void;
   onLeaveHome: () => void; // ออกจากบ้านหรือตึก กลับเมือง
   onVisitPlace: (placeId: string) => void;
-  onAdventure: () => void; // เดินเข้าประตูด่านคณิต
+  onAdventure: (gate: string) => void; // เดินเข้าประตูด่านคณิต (math) / สนามรบ (arena)
   focus: FocusApi;
   onHomeMusic: (music: { key: string; ownerName: string } | null) => void;
 };
@@ -59,6 +61,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
   const [editing, setEditing] = useState(false);
   const [showTodos, setShowTodos] = useState(false);
   const [arcadeOpen, setArcadeOpen] = useState(false);
+  const [ranksOpen, setRanksOpen] = useState(false);
   const closeArcade = useCallback(() => setArcadeOpen(false), []);
   // มือถือ: แผงล่างเปิดได้ทีละแผงผ่านแถบแท็บ (บนคอมทุกแผงแสดงตามปกติ)
   const [tab, setTab] = useState<MobileTab>('none');
@@ -202,7 +205,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
     const onEnterPlace = (id: string) => onVisitPlace(id);
     const onCard = (c: { userId: string; name: string }) => setCard(c);
     const openArcade = () => setArcadeOpen(true);
-    const openGate = () => onAdventure();
+    const openGate = (gate: string) => onAdventure(gate);
     bridge.on('enter-home', onEnterHome);
     bridge.on('enter-place', onEnterPlace);
     bridge.on('exit-home', onLeaveHome);
@@ -279,8 +282,9 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
       <header className="topbar">
         <Faceset character={profile.avatar.character} size={38} />
         <strong>{profile.username}</strong>
-        <span className="stat">⭐ {profile.xp} XP</span>
-        <span className="stat">🪙 {profile.coins}</span>
+        <button className="rank-chip" onClick={() => setRanksOpen(true)} title="ดูแรงค์และกระดานอันดับ">
+          {rankOf(profile.xp).emoji} ⭐ {profile.xp} • 🪙 {profile.coins}
+        </button>
         <span className="stat">
           {place} • 🟢 {online}
         </span>
@@ -328,6 +332,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
         <PomodoroTimer focus={focus} />
       </div>
       {arcadeOpen && <SnakeArcade onClose={closeArcade} />}
+      {ranksOpen && <RanksPanel profile={profile} onClose={() => setRanksOpen(false)} />}
       {showTodos && !editing && (
         <TodoPanel
           ownerId={isHome ? ownerId : profile.id}
@@ -359,7 +364,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
         </nav>
       )}
       <p className="hint">
-        {isPlace ? `${placeInfo?.desc ?? ''} • เดินลงไปที่ประตูด้านล่างเพื่อออก` : isHome ? 'เดินลงไปที่ประตูด้านล่างเพื่อออกจากบ้าน' : 'เดินเข้าประตูที่มีป้าย = เข้าตึก • ประตูย่านบ้าน = บ้านตัวเอง • คลิกเพื่อน = ส่องบ้าน • ตู้เกม 🐍 และประตูด่านคณิต ⚔️ อยู่ในลาน'}
+        {isPlace ? `${placeInfo?.desc ?? ''} • เดินลงไปที่ประตูด้านล่างเพื่อออก` : isHome ? 'เดินลงไปที่ประตูด้านล่างเพื่อออกจากบ้าน' : 'เดินเข้าประตูที่มีป้าย = เข้าตึก • ประตูย่านบ้าน = บ้านตัวเอง • คลิกเพื่อน = ส่องบ้าน • ตู้เกม 🐍 ประตูด่านคณิต 📐 และสนามรบ ⚔️ อยู่ในลาน'}
       </p>
     </main>
   );
