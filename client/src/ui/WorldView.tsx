@@ -13,6 +13,7 @@ import { RoomEditor } from './RoomEditor';
 import { PLACE_BY_ID } from '../lib/places';
 import { PomodoroTimer } from './PomodoroTimer';
 import { RanksPanel } from './RanksPanel';
+import { ShopPanel } from './ShopPanel';
 import { rankOf } from '../lib/wallet';
 
 type MobileTab = 'none' | 'chat' | 'focus' | 'todo';
@@ -62,6 +63,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
   const [showTodos, setShowTodos] = useState(false);
   const [arcadeOpen, setArcadeOpen] = useState(false);
   const [ranksOpen, setRanksOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   const closeArcade = useCallback(() => setArcadeOpen(false), []);
   // มือถือ: แผงล่างเปิดได้ทีละแผงผ่านแถบแท็บ (บนคอมทุกแผงแสดงตามปกติ)
   const [tab, setTab] = useState<MobileTab>('none');
@@ -285,6 +287,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
         <button className="rank-chip" onClick={() => setRanksOpen(true)} title="ดูแรงค์และกระดานอันดับ">
           {rankOf(profile.xp).emoji} ⭐ {profile.xp} • 🪙 {profile.coins}
         </button>
+        <button onClick={() => setShopOpen(true)}>🛒 ร้านค้า</button>
         <span className="stat">
           {place} • 🟢 {online}
         </span>
@@ -333,6 +336,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
       </div>
       {arcadeOpen && <SnakeArcade onClose={closeArcade} />}
       {ranksOpen && <RanksPanel profile={profile} onClose={() => setRanksOpen(false)} />}
+      {shopOpen && <ShopPanel profile={profile} onClose={() => setShopOpen(false)} />}
       {showTodos && !editing && (
         <TodoPanel
           ownerId={isHome ? ownerId : profile.id}

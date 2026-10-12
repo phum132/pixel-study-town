@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import Phaser from 'phaser';
 import type { Profile } from '../lib/profile';
-import { RUN_SECONDS } from '../lib/survivor';
+import { ARENA_MAPS, RUN_SECONDS } from '../lib/survivor';
+import { cardsOf, shardsOf, shardText, SHARD_IDS, SHARDS, type Card, type Shards } from '../lib/gacha';
 import { ELEMENTS, SKILL_BY_ID, SKILLS, describeSkill, specialOf } from '../lib/skills';
 import { mmss } from '../lib/focus';
 import { PhaserGame } from '../game/PhaserGame';
 import type { Hud, LevelUpChoice, RunResult } from '../game/SurvivorScene';
 import { arenaFinish, arenaStart, notifyWallet } from '../lib/wallet';
+import { fetchInventory, perksOf, PERK_IDS, PERKS, type Perks } from '../lib/shop';
 
 type Award = { coins: number; xp: number; capped: boolean } | 'saving' | 'error' | 'offline';
 
@@ -23,6 +25,31 @@ export function SurvivorView({ profile, onExit }: Props) {
   const [toast, setToast] = useState('');
   const [banner, setBanner] = useState<{ name: string; emoji: string; n: number } | null>(null);
   const [award, setAward] = useState<Award | null>(null);
+  const [perks, setPerks] = useState<Perks | null>(null);
+  const [shards, setShards] = useState<Shards | null>(null);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [cleared, setCleared] = useState<Set<number>>(new Set());
+  const [map, setMap] = useState(1);
+  const [picked, setPicked] = useState<string[]>([]); // การ์ดที่เลือกเป็นสกิลเริ่มต้นเพิ่ม (สูงสุด 2)
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (i: Map<string, number>) => {
+      if (cancelled) return;
+      setPerks(perksOf(i));
+      setShards(shardsOf(i));
+      setCards(cardsOf(i));
+      const done = new Set(ARENA_MAPS.filter((m) => i.has(`map:${m.n}`)).map((m) => m.n));
+      setCleared(done);
+      // เริ่มที่แมพใหม่ล่าสุดที่ปลดล็อกแล้ว
+      setMap(Math.min(ARENA_MAPS.length, Math.max(0, ...done) + 1));
+    };
+    fetchInventory()
+      .then(apply)
+      .catch(() => apply(new Map())); // โหลดไม่ได้ = เล่นแมพ 1 แบบไม่มีอัปเกรด
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const runRef = useRef<Promise<string | null> | null>(null); // รหัสรอบจากฐานข้อมูล (null = เริ่มไม่ได้ เล่นได้แต่ไม่ได้รางวัล)
 
   useEffect(() => {
@@ -38,6 +65,7 @@ export function SurvivorView({ profile, onExit }: Props) {
           if (!id) return setAward('offline');
           return arenaFinish(id, r).then((a) => {
             setAward(a);
+            if (a.won) setCleared((c) => new Set(c).add(r.map));
             notifyWallet();
           });
         })
@@ -115,7 +143,7 @@ export function SurvivorView({ profile, onExit }: Props) {
     setResult(null);
     setToast('');
     setAward(null);
-    runRef.current = arenaStart().catch(() => null);
+    runRef.current = arenaStart(map).catch(() => null);
     setBridge(new Phaser.Events.EventEmitter());
     setRound((r) => r + 1);
   }
@@ -134,6 +162,40 @@ export function SurvivorView({ profile, onExit }: Props) {
             <li>⏱️ รอดให้ครบ {RUN_SECONDS / 60} นาที บอสจะออกมา ล้มบอส = ชนะ</li>
             <li>🪙 เหรียญที่เก็บได้เข้ากระเป๋าจริง (วันละไม่เกิน 150 เหรียญจากสนามรบ) + ได้ XP ตามเวลาที่รอด</li>
           </ul>
+          <strong>เลือกแมพ</strong>
+          <div className="map-grid">
+            {ARENA_MAPS.map((m) => {
+              const open = m.n === 1 || cleared.has(m.n - 1);
+              return (
+                <button key={m.n} className={`map-card ${map === m.n ? 'active' : ''}`} disabled={!open} onClick={() => setMap(m.n)} title={open ? m.desc : `ชนะบอสแมพ ${m.n - 1} ก่อน`}>
+                  <span className="emoji">{open ? m.emoji : '🔒'}</span>
+                  <b>{m.n}. {m.name}</b>
+                  <small>{open ? `บอส: ${m.boss.name}` : 'ยังล็อกอยู่'}</small>
+                  {cleared.has(m.n) && <small className="success">✅ ชนะแล้ว</small>}
+                </button>
+              );
+            })}
+          </div>
+          {cards.length > 0 && (
+            <>
+              <strong>การ์ดสกิลจากกาชา (เลือกเป็นสกิลเริ่มต้นเพิ่มได้ 2 ใบ)</strong>
+              <div className="card-pick">
+                {cards.map((c) => {
+                  const on = picked.includes(c.def.id);
+                  return (
+                    <button
+                      key={c.def.id}
+                      className={`skill-card ${on ? 'active' : ''} ${c.def.fused ? 'legend' : ''}`}
+                      onClick={() => setPicked((p) => (on ? p.filter((x) => x !== c.def.id) : [...p, c.def.id].slice(-2)))}
+                      title={describeSkill(c.def)}
+                    >
+                      {c.def.emoji} {c.def.name} <small>ขั้น {c.level}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
           <div className="my-special">
             <strong>พลังประจำตัวของคุณ</strong>
             <span>
@@ -142,12 +204,22 @@ export function SurvivorView({ profile, onExit }: Props) {
             <span>
               ท่าไม้ตาย: {ELEMENTS[special.ult.element].emoji} <b>{special.ult.name}</b> <small className="muted">(ล้มมอนจนเกจเต็ม แล้วกด Space / ปุ่มบนจอ)</small>
             </span>
+            {perks && PERK_IDS.some((p) => perks[p] > 0) && (
+              <span>
+                อัปเกรดถาวร: {PERK_IDS.filter((p) => perks[p] > 0).map((p) => `${PERKS[p].emoji} ${PERKS[p].desc(perks[p])}`).join(' • ')}
+              </span>
+            )}
+            {shards && SHARD_IDS.some((g) => shards[g] > 0) && (
+              <span>
+                เศษพลัง: {SHARD_IDS.filter((g) => shards[g] > 0).map((g) => `${SHARDS[g].emoji} ${shardText(g, shards[g])}`).join(' • ')}
+              </span>
+            )}
             <small className="muted">มีสกิลทั้งหมด {SKILLS.length} แบบ: ธาตุ 8 x รูปแบบ 8 และเอาสกิลเลเวล 3 ที่ธาตุหรือรูปแบบเดียวกันมาผสมได้</small>
           </div>
           <p className="muted small">คอม: WASD/ลูกศร เดิน • เมาส์เล็ง • Space ท่าไม้ตาย • Esc หยุด / มือถือ: แตะค้างแล้วลากเพื่อเดิน เล็งมอนใกล้สุดให้เอง</p>
           <div className="row">
-            <button className="primary" onClick={start}>
-              เริ่มเลย!
+            <button className="primary" onClick={start} disabled={!perks}>
+              {perks ? 'เริ่มเลย!' : 'กำลังโหลด...'}
             </button>
             <button onClick={onExit}>🏘️ กลับเมือง</button>
           </div>
@@ -162,7 +234,15 @@ export function SurvivorView({ profile, onExit }: Props) {
 
   return (
     <main className="app arena">
-      <PhaserGame key={round} scene="survivor" init={{ character: profile.avatar.character, name: profile.username, bridge }} />
+      <PhaserGame key={round} scene="survivor" init={{
+          character: profile.avatar.character,
+          name: profile.username,
+          bridge,
+          perks: perks ?? undefined,
+          shards: shards ?? undefined,
+          map,
+          cards: cards.filter((c) => picked.includes(c.def.id)).map((c) => ({ id: c.def.id, level: c.level })),
+        }} />
 
       <div className="arena-hud">
         <div className="bar hp" aria-label={`เลือด ${hud?.hp ?? 0}`}>
@@ -184,7 +264,7 @@ export function SurvivorView({ profile, onExit }: Props) {
         {hud?.boss !== undefined && (
           <div className="bar boss">
             <i style={{ width: `${hud.boss * 100}%` }} />
-            <span>👹 วิญญาณยักษ์</span>
+            <span>👹 {ARENA_MAPS[map - 1].boss.name}</span>
           </div>
         )}
       </div>
@@ -275,6 +355,7 @@ export function SurvivorView({ profile, onExit }: Props) {
               <button className="primary" onClick={start} autoFocus>
                 เล่นอีกรอบ
               </button>
+              <button onClick={() => setRound(0)}>🗺️ เลือกแมพ</button>
               <button onClick={onExit}>🏘️ กลับเมือง</button>
             </div>
           </div>

@@ -2191,3 +2191,179 @@ button.icon {
     bottom: calc(86px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ===================================================================
+   ร้านค้า
+   =================================================================== */
+.shop-panel {
+  max-width: 640px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.shop-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 10px;
+  background: #3a2f55;
+  text-align: center;
+}
+
+.shop-item small {
+  font-size: 12px;
+}
+
+.shop-item button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.upgrade-card.perk {
+  cursor: default;
+}
+
+.upgrade-card.perk button {
+  flex: none;
+  min-width: 96px;
+}
+
+@media (max-width: 600px) {
+  .shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---------- กาชา + เลือกแมพ ---------- */
+.gacha-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px;
+}
+
+.gacha-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: 3px solid var(--panel-edge);
+  border-radius: 10px;
+  background: #3a2f55;
+  text-align: center;
+  animation: gacha-flip 0.45s ease-out backwards;
+}
+
+.gacha-card .emoji {
+  font-size: 26px;
+  letter-spacing: -3px;
+}
+
+.gacha-card b {
+  font-size: 13px;
+}
+
+.gacha-card small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.gacha-card.card {
+  border-color: #6ec6ff;
+  box-shadow: 0 0 10px #6ec6ff66;
+}
+
+.gacha-card.legend {
+  border-color: var(--accent);
+  background: #4a3a20;
+  box-shadow: 0 0 16px var(--accent);
+}
+
+@keyframes gacha-flip {
+  from {
+    transform: rotateY(90deg) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.gacha-owned {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.map-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px;
+  text-align: left;
+  background: #3a2f55;
+}
+
+.map-card .emoji {
+  font-size: 22px;
+}
+
+.map-card small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.map-card.active {
+  outline: 3px solid var(--accent);
+}
+
+.map-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.card-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.skill-card {
+  padding: 3px 8px;
+  font-size: 13px;
+}
+
+.skill-card small {
+  color: var(--muted);
+}
+
+.skill-card.legend {
+  border-color: var(--accent);
+}
+
+.skill-card.active {
+  background: var(--accent);
+  color: #2b1d26;
+}
+
+.arena-intro {
+  max-width: 560px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}

@@ -38,8 +38,8 @@ export async function xpLeaderboard(period: 'week' | 'all'): Promise<XpRank[]> {
 }
 
 // สนามรบ: เริ่ม/จบรอบผ่านฐานข้อมูล (ฐานข้อมูลตัดผลให้ไม่เกินเวลาเล่นจริง และจำกัดเหรียญต่อวัน)
-export async function arenaStart(): Promise<string> {
-  const { data, error } = await supabase.rpc('arena_start');
+export async function arenaStart(map: number): Promise<string> {
+  const { data, error } = await supabase.rpc('arena_start', { p_map: map });
   if (error) throw error;
   return (data as { run_id: string }).run_id;
 }

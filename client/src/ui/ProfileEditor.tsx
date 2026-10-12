@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { BASE_CHARACTERS, DEFAULT_CHARACTER } from '../lib/characters';
 import { RARITY, SKINS, SKIN_BY_KEY, skinKey } from '../lib/skins';
+import { fetchInventory, ownsSkin, type Inventory } from '../lib/shop';
 import { saveProfile, USERNAME_RULE, type Profile } from '../lib/profile';
 import { CharacterPreview } from './CharacterPreview';
 import { Faceset } from './Faceset';
@@ -49,7 +50,19 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
     }
   }
 
-  const lockedSkin = SKIN_BY_KEY.get(character); // ยังไม่มีร้านค้า = สกินทุกตัวยังล็อก
+  const [inv, setInv] = useState<Inventory | null>(null);
+  useEffect(() => {
+    if (!profile) return;
+    let cancelled = false;
+    fetchInventory()
+      .then((i) => !cancelled && setInv(i))
+      .catch(() => {}); // โหลดไม่ได้ = ถือว่ายังไม่มีสกิน
+    return () => {
+      cancelled = true;
+    };
+  }, [profile]);
+  const picked = SKIN_BY_KEY.get(character);
+  const lockedSkin = picked && !(inv && ownsSkin(inv, picked.id)) ? picked : undefined; // ยังไม่ได้ซื้อ = ลองดูได้แต่บันทึกไม่ได้
   return (
     <div className="screen">
       <form className="panel wide" onSubmit={submit}>
@@ -83,7 +96,7 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
             </button>
           ))}
         </div>
-        <span className="muted">✨ สกินอนิเมะ (กดเพื่อลองดู • แลกด้วยเหรียญในร้านค้า เร็วๆ นี้)</span>
+        <span className="muted">✨ สกินอนิเมะ (กดเพื่อลองดู • ตัวที่ยังไม่มี แลกได้ที่ 🛒 ร้านค้าในเมือง)</span>
         <div className="character-grid skins">
           {SKINS.map((s) => {
             const key = skinKey(s.id);
@@ -98,14 +111,14 @@ export function ProfileEditor({ userId, profile, onSaved, onCancel }: Props) {
                 aria-label={`${s.name} สกิน${RARITY[s.rarity].name}`}
               >
                 <Faceset character={key} size={38} />
-                <small>🔒 {s.name}</small>
+                <small>{inv && ownsSkin(inv, s.id) ? '' : '🔒 '}{s.name}</small>
               </button>
             );
           })}
         </div>
         {lockedSkin && (
           <p className="muted small">
-            👀 กำลังลองสกิน {lockedSkin.name} ({RARITY[lockedSkin.rarity].name} {RARITY[lockedSkin.rarity].price} 🪙) — ยังใส่จริงไม่ได้ ต้องแลกในร้านค้าก่อน
+            👀 กำลังลองสกิน {lockedSkin.name} ({RARITY[lockedSkin.rarity].name} {RARITY[lockedSkin.rarity].price} 🪙) — ยังไม่มีสกินนี้ แลกได้ที่ 🛒 ร้านค้าในเมือง
           </p>
         )}
         <button className="primary" disabled={busy || !!lockedSkin}>

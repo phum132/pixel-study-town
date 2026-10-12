@@ -68,7 +68,7 @@ supabase/migrations/     ไฟล์ SQL สร้างตารางแล�
 
 1. สมัครแล้วสร้างโปรเจกต์ฟรีที่ [supabase.com](https://supabase.com) (เลือก region **Singapore** จะใกล้ไทยที่สุด)
 2. เปิด **SQL Editor → New query** แล้วรันไฟล์ในโฟลเดอร์ `supabase/migrations/` **ทีละไฟล์ตามลำดับ ไฟล์ละครั้งเดียว**:
-   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql` → `007_math_adventure.sql` → `008_economy.sql`
+   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql` → `007_math_adventure.sql` → `008_economy.sql` → `009_shop.sql` → `010_arena_maps_gacha.sql`
    (`005_snake_fix.sql` ใช้เฉพาะฐานข้อมูลที่เคยรัน 004 เวอร์ชันแรกไปแล้ว)
 3. ถ้าแค่ทดสอบในเครื่อง: ไปที่ **Authentication → Sign In / Providers → Email** แล้วปิด **Confirm email** จะได้สร้างบัญชีทดสอบได้โดยไม่ต้องใช้อีเมลจริง (ก่อนเปิดให้คนทั่วไปใช้ต้องเปิดกลับ)
 
@@ -106,7 +106,7 @@ cd client && npm run dev -- --host
 - [x] Phase 8a: ด่านผจญภัยคณิต 10 ด่าน x 3 ระดับ มีมอนกับบอส ฐานข้อมูลสุ่มโจทย์และตรวจคำตอบเอง กระดานอันดับรายวิชาและรวม
 - [ ] Phase 8b: ด่านอังกฤษ แล้วตามด้วยวิชาอื่น
 - [x] Phase 8c: สนามรบ กระเป๋าเหรียญ XP และแรงค์ (Bronze ถึง Diamond) กระดานอันดับ XP รายสัปดาห์และตลอดกาล
-- [ ] Phase 9: ร้านค้า (สกิน อาวุธ อัปเกรดถาวร เฟอร์นิเจอร์)
+- [x] Phase 9: ร้านค้า (สกินอนิเมะ อัปเกรดถาวรในสนามรบ) สนามรบ 5 แมพ กาชา (เศษพลังและการ์ดสกิล)
 - [ ] Phase 10: ควิซสดและติวด้วยกัน
 - [ ] Phase 11: เมืองแยกตามคอมมู
 - [ ] Phase 12: ระบบดูแลชุมชน (กรองคำหยาบ รายงาน บล็อก) ตรวจความปลอดภัย และเอาขึ้นเว็บจริง

@@ -6,7 +6,7 @@ import { MAP_SETS } from '../lib/adventureMap';
 import { monsterUrl } from '../lib/adventureStages';
 import { DIR_COLUMN } from '../lib/characters';
 import {
-  ARENA_H, ARENA_W, BOSS, ENEMIES, MAX_ENEMIES, RUN_SECONDS, UPGRADES, makeArenaMap, noLevels, openUpgrades, pickEnemy,
+  ARENA_H, ARENA_MAPS, ARENA_W, MAX_ENEMIES, RUN_SECONDS, UPGRADES, makeArenaMap, noLevels, openUpgrades, pickEnemy,
   spawnPerSecond, statsOf, xpToNext, type EnemyType, type Levels, type Stats, type UpgradeId,
 } from '../lib/survivor';
 import {
@@ -14,6 +14,8 @@ import {
   type Element, type SkillDef,
 } from '../lib/skills';
 import { SkillEngine, createSkillAnims, preloadSkillFx, type SkillHost } from './skillEngine';
+import type { Perks } from '../lib/shop';
+import type { Shards } from '../lib/gacha';
 
 const W = ARENA_W * 16;
 const H = ARENA_H * 16;
@@ -23,7 +25,15 @@ const HURT_MS = 600; // โดนตีแล้วอมตะชั่วค�
 const ULT_KILLS = 80; // ล้มมอนครบเท่านี้ = เกจท่าไม้ตายเต็ม (หัวหน้านับ 10)
 const HUD_MS = 150;
 
-export type SurvivorInit = { character: string; name: string; bridge: Phaser.Events.EventEmitter };
+export type SurvivorInit = {
+  character: string;
+  name: string;
+  bridge: Phaser.Events.EventEmitter;
+  perks?: Perks;
+  map?: number; // 1-5
+  shards?: Shards; // เศษพลังจากกาชา
+  cards?: { id: string; level: number }[]; // การ์ดสกิลที่เลือกเป็นสกิลเริ่มต้นเพิ่ม
+};
 export type HudSkill = { id: string; name: string; emoji: string; level: number; fused: boolean };
 export type Hud = {
   hp: number; maxHp: number; xp: number; need: number; level: number; sec: number; kills: number; coins: number; boss?: number;
@@ -35,7 +45,7 @@ export type LevelUpChoice =
   | { kind: 'skill'; id: string; name: string; emoji: string; desc: string; next: number; fused: boolean }
   | { kind: 'fuse'; id: string; a: string; b: string; name: string; emoji: string; desc: string; next: number }
   | { kind: 'heal'; name: string; emoji: string; desc: string };
-export type RunResult = { won: boolean; sec: number; kills: number; level: number; coins: number };
+export type RunResult = { won: boolean; sec: number; kills: number; level: number; coins: number; map: number };
 
 class Enemy extends Phaser.Physics.Arcade.Sprite {
   kind!: EnemyType;
@@ -56,6 +66,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
   stunUntil = 0;
   dot = 0;
   statusTint = 0;
+  baseTint = 0; // สีประจำตัว (บอสบางแมพ)
 }
 
 type Bullet = Phaser.Physics.Arcade.Image & { bornAt: number; pierceLeft: number; hits: Set<Enemy> };
@@ -96,6 +107,10 @@ export class SurvivorScene extends Phaser.Scene {
   private bossRef?: Enemy;
   private lastHud = 0;
   private regenDebt = 0;
+  private perks: Perks = { hp: 0, power: 0, magnet: 0, ult: 0, revive: 0 };
+  private revives = 0;
+  private shards: Shards = { dmg: 0, hp: 0, speed: 0, haste: 0, magnet: 0 };
+  private mapDef = ARENA_MAPS[0];
   private healDebt = 0;
   private lastDt = 16;
   private touch = false;
@@ -110,13 +125,19 @@ export class SurvivorScene extends Phaser.Scene {
   init(data: SurvivorInit) {
     this.init0 = data;
     this.bridge = data.bridge;
+    this.perks = data.perks ?? { hp: 0, power: 0, magnet: 0, ult: 0, revive: 0 };
+    this.shards = data.shards ?? { dmg: 0, hp: 0, speed: 0, haste: 0, magnet: 0 };
+    this.mapDef = ARENA_MAPS[Math.min(ARENA_MAPS.length, Math.max(1, data.map ?? 1)) - 1];
+    this.revives = this.perks.revive;
+    this.stats = this.calcStats();
   }
 
   preload() {
     preloadCharacters(this);
     for (const s of MAP_SETS) this.load.image(`adv-${s.name}`, `assets/tiles/ninja/${s.file}`);
-    for (const e of ENEMIES) this.load.spritesheet(`mon-${e.key}`, monsterUrl(e.key), { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet(`mon-${BOSS.key}`, monsterUrl(BOSS.key), { frameWidth: 50, frameHeight: 50 });
+    for (const e of this.mapDef.roster) this.load.spritesheet(`mon-${e.key}`, monsterUrl(e.key), { frameWidth: 16, frameHeight: 16 });
+    const boss = this.mapDef.boss.key;
+    this.load.spritesheet(`mon-${boss}`, monsterUrl(boss), { frameWidth: 50, frameHeight: 50 });
     this.load.spritesheet('fx-shuriken', 'assets/fx/shuriken.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('fx-thunder', 'assets/fx/thunder.png', { frameWidth: 20, frameHeight: 28 });
     this.load.spritesheet('fx-smoke', 'assets/fx/smoke.png', { frameWidth: 32, frameHeight: 32 });
@@ -131,7 +152,7 @@ export class SurvivorScene extends Phaser.Scene {
     this.touch = this.sys.game.device.input.touch;
 
     // แผนที่
-    const plan = makeArenaMap();
+    const plan = makeArenaMap(this.mapDef.theme);
     const map = this.make.tilemap({ tileWidth: 16, tileHeight: 16, width: ARENA_W, height: ARENA_H });
     const sets = MAP_SETS.map((s) => map.addTilesetImage(s.name, `adv-${s.name}`, 16, 16, 0, 0, s.firstgid)!);
     const layer = (key: string, data: number[], depth: number) => {
@@ -145,6 +166,8 @@ export class SurvivorScene extends Phaser.Scene {
     layer('above', plan.above, 10);
     const block = layer('block', plan.solid.map((s) => (s ? 1 : 0)), 0).setVisible(false);
     block.setCollisionByExclusion([-1]);
+    // ถ้ำ/รังปีศาจ: ย้อมพื้นให้มืดลง (ใต้ตัวละคร)
+    if (this.mapDef.theme.tint) this.add.rectangle(0, 0, W, H, this.mapDef.theme.tint).setOrigin(0).setBlendMode(Phaser.BlendModes.MULTIPLY).setDepth(1.5);
 
     // ตัวเรา
     const { character, name } = this.init0;
@@ -156,14 +179,14 @@ export class SurvivorScene extends Phaser.Scene {
     this.physics.add.collider(sprite, block);
 
     // ท่าทางมอน
-    for (const e of ENEMIES) {
+    for (const e of this.mapDef.roster) {
       const key = `mon-${e.key}`;
       for (const [d, col] of Object.entries(DIR_COLUMN)) {
         const k = `${key}-walk-${d}`;
         if (!this.anims.exists(k)) this.anims.create({ key: k, frames: [0, 1, 2, 3].map((r) => ({ key, frame: r * 4 + col })), frameRate: 6, repeat: -1 });
       }
     }
-    const bossKey = `mon-${BOSS.key}`;
+    const bossKey = `mon-${this.mapDef.boss.key}`;
     if (!this.anims.exists(`${bossKey}-idle`)) {
       this.anims.create({ key: `${bossKey}-idle`, frames: this.anims.generateFrameNumbers(bossKey, { start: 0, end: 4 }), frameRate: 6, repeat: -1 });
     }
@@ -201,6 +224,10 @@ export class SurvivorScene extends Phaser.Scene {
     this.skills = new SkillEngine<Enemy>(this.skillHost());
     const start = SKILL_BY_ID.get(this.special.start);
     if (start) this.skills.add(start);
+    for (const c of this.init0.cards ?? []) {
+      const d = SKILL_BY_ID.get(c.id);
+      if (d && !this.skills.owned.some((o) => o.def.id === d.id)) this.skills.add(d, Math.min(MAX_SKILL_LEVEL, Math.max(1, c.level)));
+    }
     this.keySpace = this.input.keyboard!.addKey('SPACE', false);
     this.listen('ult', () => this.useUlt());
 
@@ -217,7 +244,20 @@ export class SurvivorScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanup);
 
     this.hp = this.stats.maxHp;
+    this.ult = 20 * this.perks.ult;
     this.emitHud(true);
+  }
+
+  // ค่าตัว = อัปเกรดในรอบนี้ + อัปเกรดถาวรที่ซื้อในร้านค้า
+  private calcStats(): Stats {
+    const s = statsOf(this.levels);
+    const g = this.shards;
+    s.maxHp += 10 * this.perks.hp + 5 * g.hp;
+    s.damage *= (1 + 0.05 * this.perks.power) * (1 + 0.02 * g.dmg);
+    s.pickup *= (1 + 0.1 * this.perks.magnet) * (1 + 0.03 * g.magnet);
+    s.speed *= 1 + 0.015 * g.speed;
+    s.cooldown /= 1 + 0.02 * g.haste;
+    return s;
   }
 
   private listen(event: string, fn: (...args: never[]) => void) {
@@ -318,18 +358,18 @@ export class SurvivorScene extends Phaser.Scene {
     const sec = this.elapsed / 1000;
     if (sec >= RUN_SECONDS && !this.bossSpawned) {
       this.bossSpawned = true;
-      this.bossRef = this.spawnEnemy(ENEMIES[0], { boss: true });
-      this.bridge.emit('toast', `👹 ${BOSS.name} ปรากฏตัวแล้ว! ล้มให้ได้เพื่อชนะ`);
+      this.bossRef = this.spawnEnemy(this.mapDef.roster[0], { boss: true });
+      this.bridge.emit('toast', `👹 ${this.mapDef.boss.name} ปรากฏตัวแล้ว! ล้มให้ได้เพื่อชนะ`);
     }
     if (this.elapsed >= this.nextElite) {
       this.nextElite += 60_000;
-      this.spawnEnemy(pickEnemy(sec), { elite: true });
+      this.spawnEnemy(pickEnemy(this.mapDef.roster, sec), { elite: true });
     }
     this.spawnDebt += (spawnPerSecond(sec) * dt) / 1000 * (this.bossSpawned ? 0.4 : 1);
     while (this.spawnDebt >= 1) {
       this.spawnDebt -= 1;
       if (this.enemies.countActive() >= MAX_ENEMIES) break;
-      this.spawnEnemy(pickEnemy(sec));
+      this.spawnEnemy(pickEnemy(this.mapDef.roster, sec));
     }
   }
 
@@ -346,18 +386,21 @@ export class SurvivorScene extends Phaser.Scene {
     }
     x = Phaser.Math.Clamp(x, 40, W - 40);
     y = Phaser.Math.Clamp(y, 40, H - 40);
-    const key = opt.boss ? `mon-${BOSS.key}` : `mon-${type.key}`;
+    const boss = this.mapDef.boss;
+    const key = opt.boss ? `mon-${boss.key}` : `mon-${type.key}`;
     const e = this.enemies.get(x, y, key) as Enemy | null;
     if (!e) return undefined;
     e.enableBody(true, x, y, true, true);
     e.setTexture(key, 0).setAlpha(1).clearTint().setScale(1).setAngle(0);
-    const grow = 1 + this.elapsed / 1000 / 240;
+    const grow = (1 + this.elapsed / 1000 / 240) * this.mapDef.hpMul;
     e.kind = type;
     e.elite = !!opt.elite;
     e.boss = !!opt.boss;
-    e.hp = e.maxHp = opt.boss ? BOSS.hp : Math.round(type.hp * grow * (opt.elite ? 10 : 1));
-    e.speed = opt.boss ? BOSS.speed : type.speed * (opt.elite ? 0.85 : 1);
-    e.damage = opt.boss ? BOSS.damage : type.damage * (opt.elite ? 1.5 : 1);
+    e.hp = e.maxHp = opt.boss ? boss.hp : Math.round(type.hp * grow * (opt.elite ? 10 : 1));
+    e.speed = opt.boss ? boss.speed : type.speed * (opt.elite ? 0.85 : 1);
+    e.damage = opt.boss ? boss.damage : type.damage * (opt.elite ? 1.5 : 1);
+    e.baseTint = opt.boss ? boss.tint ?? 0 : 0;
+    if (e.baseTint) e.setTint(e.baseTint);
     e.flashUntil = 0;
     e.burnUntil = e.poisonUntil = e.slowUntil = e.stunUntil = 0;
     e.burnDps = e.poisonDps = e.dot = e.statusTint = 0;
@@ -452,6 +495,7 @@ export class SurvivorScene extends Phaser.Scene {
     e.statusTint = tint;
     if (tint === -1) e.setTintFill(0xffffff);
     else if (tint) e.setTint(tint);
+    else if (e.baseTint) e.setTint(e.baseTint);
     else e.clearTint();
   }
 
@@ -557,6 +601,17 @@ export class SurvivorScene extends Phaser.Scene {
     this.hurtUntil = this.elapsed + HURT_MS;
     this.hp = Math.max(0, this.hp - e.damage);
     this.cameras.main.shake(120, 0.004);
+    if (this.hp <= 0 && this.revives > 0) {
+      // ขนนกฟีนิกซ์: ฟื้นพร้อมคลื่นแสงผลักมอนรอบตัว
+      this.revives--;
+      this.hp = Math.ceil(this.stats.maxHp / 2);
+      this.hurtUntil = this.elapsed + 2500;
+      const { x, y } = this.me.sprite;
+      this.skills.wave(x, y, 160, 40, ['light', 'wind'], 360);
+      this.cameras.main.flash(400, 255, 240, 180);
+      this.bridge.emit('toast', '🪶 ขนนกฟีนิกซ์! ฟื้นคืนชีพแล้ว');
+      return;
+    }
     if (this.hp <= 0) this.finish(false);
   }
 
@@ -596,8 +651,8 @@ export class SurvivorScene extends Phaser.Scene {
       enemiesNear: (x, y, r) => this.enemiesNear(x, y, r),
       nearest: (x, y, r, skip) => this.nearest(x, y, r, skip),
       hit: (e, dmg, els) => this.hit(e, dmg, els),
-      power: () => 1 + 0.25 * this.levels.dmg,
-      haste: () => 1 + 0.18 * this.levels.rate,
+      power: () => (1 + 0.25 * this.levels.dmg) * (1 + 0.05 * this.perks.power) * (1 + 0.02 * this.shards.dmg),
+      haste: () => (1 + 0.18 * this.levels.rate) * (1 + 0.02 * this.shards.haste),
       heal: (n) => this.heal(n),
       now: () => this.elapsed,
     };
@@ -776,7 +831,7 @@ export class SurvivorScene extends Phaser.Scene {
     } else if (c.kind === 'stat') {
       this.levels[c.id]++;
       const before = this.stats.maxHp;
-      this.stats = statsOf(this.levels);
+      this.stats = this.calcStats();
       if (c.id === 'hp') this.hp = Math.min(this.stats.maxHp, this.hp + (this.stats.maxHp - before));
     } else if (c.kind === 'skill') {
       const d = SKILL_BY_ID.get(c.id);
@@ -808,7 +863,7 @@ export class SurvivorScene extends Phaser.Scene {
     this.physics.pause();
     this.me.sprite.setVelocity(0, 0);
     this.emitHud(true);
-    const result: RunResult = { won, sec: Math.floor(this.elapsed / 1000), kills: this.kills, level: this.level, coins: this.coins };
+    const result: RunResult = { won, sec: Math.floor(this.elapsed / 1000), kills: this.kills, level: this.level, coins: this.coins, map: this.mapDef.n };
     this.time.delayedCall(won ? 400 : 700, () => this.bridge.emit('end', result));
   }
 
