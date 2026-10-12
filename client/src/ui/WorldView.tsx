@@ -31,6 +31,7 @@ type Props = {
   onVisitHome: (ownerId: string) => void;
   onLeaveHome: () => void; // ออกจากบ้านหรือตึก กลับเมือง
   onVisitPlace: (placeId: string) => void;
+  onAdventure: () => void; // เดินเข้าประตูด่านคณิต
   focus: FocusApi;
   onHomeMusic: (music: { key: string; ownerName: string } | null) => void;
 };
@@ -44,7 +45,7 @@ const LEAVE_REASONS: Record<number, string> = {
 };
 
 // เข้าห้องบนเซิร์ฟเวอร์ (เมืองของคอมมู หรือบ้านของใครสักคน) แล้วแสดงเกม + แถบด้านบน + แชท
-export function WorldView({ profile, target, onPickCommunity, onEditProfile, onVisitHome, onLeaveHome, onVisitPlace, focus, onHomeMusic }: Props) {
+export function WorldView({ profile, target, onPickCommunity, onEditProfile, onVisitHome, onLeaveHome, onVisitPlace, onAdventure, focus, onHomeMusic }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [home, setHome] = useState<HomeData | null>(null);
   const [ownerName, setOwnerName] = useState('');
@@ -201,19 +202,22 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
     const onEnterPlace = (id: string) => onVisitPlace(id);
     const onCard = (c: { userId: string; name: string }) => setCard(c);
     const openArcade = () => setArcadeOpen(true);
+    const openGate = () => onAdventure();
     bridge.on('enter-home', onEnterHome);
     bridge.on('enter-place', onEnterPlace);
     bridge.on('exit-home', onLeaveHome);
     bridge.on('player-click', onCard);
     bridge.on('open-arcade', openArcade);
+    bridge.on('open-gate', openGate);
     return () => {
       bridge.off('enter-home', onEnterHome);
       bridge.off('enter-place', onEnterPlace);
       bridge.off('exit-home', onLeaveHome);
       bridge.off('player-click', onCard);
       bridge.off('open-arcade', openArcade);
+      bridge.off('open-gate', openGate);
     };
-  }, [bridge, onVisitHome, onLeaveHome, onVisitPlace, profile.id]);
+  }, [bridge, onVisitHome, onLeaveHome, onVisitPlace, onAdventure, profile.id]);
 
   // เปิดตู้เกมอยู่ = ตัวละครห้ามเดิน (ปุ่มลูกศรใช้บังคับงู)
   useEffect(() => {
@@ -355,7 +359,7 @@ export function WorldView({ profile, target, onPickCommunity, onEditProfile, onV
         </nav>
       )}
       <p className="hint">
-        {isPlace ? `${placeInfo?.desc ?? ''} • เดินลงไปที่ประตูด้านล่างเพื่อออก` : isHome ? 'เดินลงไปที่ประตูด้านล่างเพื่อออกจากบ้าน' : 'เดินเข้าประตูที่มีป้าย = เข้าตึก • ประตูย่านบ้าน = บ้านตัวเอง • คลิกเพื่อน = ส่องบ้าน • ตู้เกม 🐍 กลางลาน'}
+        {isPlace ? `${placeInfo?.desc ?? ''} • เดินลงไปที่ประตูด้านล่างเพื่อออก` : isHome ? 'เดินลงไปที่ประตูด้านล่างเพื่อออกจากบ้าน' : 'เดินเข้าประตูที่มีป้าย = เข้าตึก • ประตูย่านบ้าน = บ้านตัวเอง • คลิกเพื่อน = ส่องบ้าน • ตู้เกม 🐍 และประตูด่านคณิต ⚔️ อยู่ในลาน'}
       </p>
     </main>
   );

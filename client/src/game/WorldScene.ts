@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getStateCallbacks, type Room } from 'colyseus.js';
 import { preloadCharacters } from './character';
 import { Avatar, type Dir } from './avatar';
+import { addMoveKeys, dirOf, readMove, typingInForm, type MoveKeys } from './controls';
 import { parseAvatar } from '../lib/characters';
 import type { ChatMessage } from '../lib/colyseus';
 import type { HomeData } from '../lib/home';
@@ -40,7 +41,7 @@ export abstract class WorldScene extends Phaser.Scene {
   protected inputLocked = false; // เปิดหน้าต่างเกมอยู่ (ปุ่มลูกศรใช้บังคับงูแทน ตัวละครต้องไม่เดิน)
   protected initData!: WorldInit;
   private others = new Map<string, Avatar>();
-  private keys!: Record<'up' | 'down' | 'left' | 'right' | 'w' | 'a' | 's' | 'd', Phaser.Input.Keyboard.Key>;
+  private keys!: MoveKeys;
   private lastSent = { x: 0, y: 0, dir: 'down', moving: false, at: 0 };
   private unsubscribers: (() => void)[] = [];
 
@@ -80,19 +81,19 @@ export abstract class WorldScene extends Phaser.Scene {
       cam.centerOn(setup.width / 2, setup.height / 2);
     }
 
-    // false = ไม่แย่งปุ่มจากเบราว์เซอร์ จะได้พิมพ์ตัว w a s d ในช่องแชทได้
-    const kb = this.input.keyboard!;
-    const key = (k: string) => kb.addKey(k, false);
-    this.keys = {
-      up: key('UP'), down: key('DOWN'), left: key('LEFT'), right: key('RIGHT'),
-      w: key('W'), a: key('A'), s: key('S'), d: key('D'),
-    };
+    this.keys = addMoveKeys(this);
 
     this.connectRoom();
     this.listen('input-lock', (locked: boolean) => {
       this.inputLocked = locked;
     });
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribers.forEach((off) => off()));
+    // ปิดเกมทั้งเกม (game.destroy) ได้ DESTROY ไม่ใช่ SHUTDOWN จึงต้องฟังทั้งสองอย่าง
+    const cleanup = () => {
+      this.unsubscribers.forEach((off) => off());
+      this.unsubscribers = [];
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+    this.events.once(Phaser.Scenes.Events.DESTROY, cleanup);
   }
 
   // ลงทะเบียนตัวฟังเหตุการณ์จาก React แล้วยกเลิกให้อัตโนมัติตอนปิดฉาก
@@ -160,30 +161,12 @@ export abstract class WorldScene extends Phaser.Scene {
 
   // กำลังพิมพ์ในช่องแชท/ฟอร์ม หรือเปิดหน้าต่างเกมอยู่ = ปุ่มคีย์บอร์ดไม่ใช่ของตัวละคร
   protected isTyping() {
-    return this.inputLocked || ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '');
+    return this.inputLocked || typingInForm();
   }
 
   private moveMe() {
     const sprite = this.me.sprite;
-    const typing = this.isTyping();
-    const k = this.keys;
-    let dx = 0;
-    let dy = 0;
-    if (!typing) {
-      dx = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
-      dy = (k.down.isDown || k.s.isDown ? 1 : 0) - (k.up.isDown || k.w.isDown ? 1 : 0);
-    }
-
-    // มือถือ/เมาส์: กดค้างแล้วเดินไปทางนิ้ว
-    const pointer = this.input.activePointer;
-    if (this.pointerWalk && !this.inputLocked && dx === 0 && dy === 0 && pointer.isDown) {
-      const ox = pointer.worldX - sprite.x;
-      const oy = pointer.worldY - sprite.y;
-      if (Math.hypot(ox, oy) > 6) {
-        dx = ox;
-        dy = oy;
-      }
-    }
+    const { dx, dy } = readMove(this, this.keys, sprite, !this.isTyping(), this.pointerWalk && !this.inputLocked);
 
     const len = Math.hypot(dx, dy);
     if (len === 0) {
@@ -192,7 +175,7 @@ export abstract class WorldScene extends Phaser.Scene {
       return;
     }
     sprite.setVelocity((dx / len) * SPEED, (dy / len) * SPEED);
-    this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy > 0 ? 'down' : 'up';
+    this.dir = dirOf(dx, dy);
     this.me.setPose(this.dir, true);
   }
 

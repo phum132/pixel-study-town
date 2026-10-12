@@ -251,6 +251,10 @@ signs.push(
 );
 const arcade = { x: (PLAZA.x + PLAZA.w - 2) * 16, y: (PLAZA.y + 1) * 16 };
 mark(PLAZA.x + PLAZA.w - 2, PLAZA.y + 1);
+// ประตูด่านคณิต (2x2 ช่อง) มุมซ้ายล่างของลาน — ต้องตรงกับ EXITS.math ใน server/src/rooms/TownRoom.ts (เกิดใต้ประตู)
+const gate = { x: (PLAZA.x + 1) * 16, y: (PLAZA.y + PLAZA.h - 4) * 16 };
+mark(PLAZA.x + 1, PLAZA.y + PLAZA.h - 4, 2, 2);
+signs.push({ text: '⚔️ ด่านคณิต', x: gate.x + 16, y: gate.y - 14 });
 
 applyDirt();
 
@@ -291,6 +295,7 @@ const map = {
           obj({ name: 'door', ...d, ...(place ? { properties: [{ name: 'place', type: 'string', value: place }] } : {}) }),
         ),
         obj({ name: 'arcade', ...arcade, width: 16, height: 16 }),
+        obj({ name: 'gate', ...gate, width: 32, height: 32, properties: [{ name: 'subject', type: 'string', value: 'math' }] }),
         ...labels.map((l) => obj({ name: 'label', x: l.x, y: l.y, point: true, properties: [{ name: 'text', type: 'string', value: l.text }] })),
         ...signs.map((l) => obj({ name: 'sign', x: l.x, y: l.y, point: true, properties: [{ name: 'text', type: 'string', value: l.text }] })),
       ],

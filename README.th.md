@@ -68,7 +68,7 @@ supabase/migrations/     ไฟล์ SQL สร้างตารางแล�
 
 1. สมัครแล้วสร้างโปรเจกต์ฟรีที่ [supabase.com](https://supabase.com) (เลือก region **Singapore** จะใกล้ไทยที่สุด)
 2. เปิด **SQL Editor → New query** แล้วรันไฟล์ในโฟลเดอร์ `supabase/migrations/` **ทีละไฟล์ตามลำดับ ไฟล์ละครั้งเดียว**:
-   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql`
+   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql` → `007_math_adventure.sql`
    (`005_snake_fix.sql` ใช้เฉพาะฐานข้อมูลที่เคยรัน 004 เวอร์ชันแรกไปแล้ว)
 3. ถ้าแค่ทดสอบในเครื่อง: ไปที่ **Authentication → Sign In / Providers → Email** แล้วปิด **Confirm email** จะได้สร้างบัญชีทดสอบได้โดยไม่ต้องใช้อีเมลจริง (ก่อนเปิดให้คนทั่วไปใช้ต้องเปิดกลับ)
 
@@ -103,7 +103,8 @@ cd client && npm run dev -- --host
 - [x] Phase 5: To-do และ Pomodoro ที่ฐานข้อมูลเป็นคนจับเวลา
 - [x] Phase 6: เพลง lofi
 - [x] Phase 7: มินิเกม Snake (ฐานข้อมูลตรวจคะแนน), หน้าจอมือถือ, ตัวละคร Ninja Adventure และเมือง 4 ย่าน
-- [ ] Phase 8: ห้องเรียน ถาม-ตอบ และโจทย์ฝึก
+- [x] Phase 8a: ด่านผจญภัยคณิต 10 ด่าน x 3 ระดับ มีมอนกับบอส ฐานข้อมูลสุ่มโจทย์และตรวจคำตอบเอง กระดานอันดับรายวิชาและรวม
+- [ ] Phase 8b: ด่านอังกฤษ แล้วตามด้วยวิชาอื่น
 - [ ] Phase 9: XP แรงค์ กระดานอันดับ ร้านค้าเฟอร์นิเจอร์
 - [ ] Phase 10: ควิซสดและติวด้วยกัน
 - [ ] Phase 11: เมืองแยกตามคอมมู

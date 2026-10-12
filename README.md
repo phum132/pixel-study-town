@@ -68,7 +68,7 @@ supabase/migrations/     SQL files that create the database tables and rules
 
 1. Create a free project at [supabase.com](https://supabase.com) (Singapore region if you are in Southeast Asia).
 2. Open **SQL Editor → New query** and run each file in `supabase/migrations/` **once, in order**:
-   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql`
+   `001_profiles.sql` → `002_rooms.sql` → `003_todos_focus.sql` → `004_snake.sql` → `006_review_fixes.sql` → `007_math_adventure.sql`
    (`005_snake_fix.sql` is only for databases that ran an early version of 004.)
 3. For local testing only: **Authentication → Sign In / Providers → Email** → turn off **Confirm email**, so you can make test accounts without real inboxes. Turn it back on before going public.
 
@@ -103,7 +103,8 @@ Open http://localhost:5173. To test multiplayer, open a second account in an inc
 - [x] Phase 5: to-do list and server-timed Pomodoro
 - [x] Phase 6: lofi music
 - [x] Phase 7: Snake minigame with database-verified scores, mobile layout, Ninja Adventure characters and a 4-district town
-- [ ] Phase 8: classrooms with Q&A and practice problems
+- [x] Phase 8a: math adventure — 10 stages x 3 levels, monsters and a boss, questions generated and checked by the database, per-subject and overall leaderboards
+- [ ] Phase 8b: English adventure, then other subjects
 - [ ] Phase 9: XP, ranks, leaderboards, furniture shop
 - [ ] Phase 10: live quiz and group study
 - [ ] Phase 11: a themed town per community

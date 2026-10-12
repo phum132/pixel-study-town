@@ -41,10 +41,25 @@ export function MusicPlayer({ homeMusic }: Props) {
   useEffect(() => () => playerRef.current?.destroy(), []);
 
   // เปิดตู้เกมบนจอเล็ก: หน้าต่างเกมจะบังวิดีโอ จึงหยุดเพลงไว้ก่อน (กฎ YouTube ห้ามบังวิดีโอระหว่างเล่น)
+  // ปิดหน้าต่างแล้ว ถ้าเราเป็นคนหยุดเพลงไว้ ก็เล่นต่อให้ (ตอนนั้นวิดีโอกลับมาให้เห็นแล้ว)
+  const pausedByGameRef = useRef(false);
+  const playingRef = useRef(false);
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
   useEffect(() => {
     const onArcade = (e: Event) => {
       const small = window.matchMedia('(max-width: 1023px), (max-height: 500px)').matches;
-      if ((e as CustomEvent<boolean>).detail && small) playerRef.current?.pauseVideo();
+      const player = playerRef.current;
+      if ((e as CustomEvent<boolean>).detail) {
+        if (small && player && playingRef.current) {
+          player.pauseVideo();
+          pausedByGameRef.current = true;
+        }
+      } else if (pausedByGameRef.current) {
+        pausedByGameRef.current = false;
+        player?.playVideo();
+      }
     };
     window.addEventListener('pst-arcade', onArcade);
     return () => window.removeEventListener('pst-arcade', onArcade);

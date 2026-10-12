@@ -9,6 +9,7 @@ import { AuthScreen } from './ui/AuthScreen';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { CommunityPicker } from './ui/CommunityPicker';
 import { WorldView, type WorldTarget } from './ui/WorldView';
+import { AdventureView } from './ui/AdventureView';
 
 // ลำดับหน้าจอ: ล็อกอิน → สร้างตัวละคร (ครั้งแรก) → เลือกคอมมู → เข้าเมือง ⇄ บ้าน
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
   // ตอนนี้อยู่ที่ไหน (null = หน้าเลือกคอมมู) และคอมมูล่าสุด (ไว้กลับจากบ้าน)
   const [target, setTarget] = useState<WorldTarget | null>(null);
   const [lastCommunity, setLastCommunity] = useState<string | null>(null);
+  const [adventure, setAdventure] = useState(false); // อยู่ในด่านคณิต (ออกจากเมืองชั่วคราว)
 
   const goTown = useCallback((communityId: string) => {
     setLastCommunity(communityId);
@@ -31,6 +33,12 @@ export default function App() {
     [lastCommunity],
   );
   // ออกจากบ้าน/ตึก → กลับเมือง และบอกว่าออกมาจากไหน จะได้เกิดหน้าประตูนั้น
+  const openAdventure = useCallback(() => setAdventure(true), []);
+  // ออกจากด่าน → กลับมายืนหน้าประตูด่านในลานเมือง
+  const leaveAdventure = useCallback(() => {
+    setAdventure(false);
+    setTarget(lastCommunity ? { kind: 'town', communityId: lastCommunity, from: 'math' } : null);
+  }, [lastCommunity]);
   const leaveHome = useCallback(
     () =>
       setTarget((t) => {
@@ -92,6 +100,12 @@ export default function App() {
         onCancel={profile ? () => setEditing(false) : undefined}
       />
     );
+  } else if (adventure) {
+    screen = (
+      <ErrorBoundary label="ด่านคณิต" onReset={leaveAdventure}>
+        <AdventureView profile={profile} onExit={leaveAdventure} />
+      </ErrorBoundary>
+    );
   } else if (!target) {
     screen = (
       <CommunityPicker
@@ -112,6 +126,7 @@ export default function App() {
         onVisitHome={visitHome}
         onLeaveHome={leaveHome}
         onVisitPlace={visitPlace}
+        onAdventure={openAdventure}
         focus={focus}
         onHomeMusic={setHomeMusic}
       />

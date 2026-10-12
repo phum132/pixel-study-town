@@ -11,14 +11,17 @@ const TILESETS = {
   house: 'TilesetHouse.png',
   detail: 'TilesetFloorDetail.png',
 };
-const ARCADE_REACH = 22; // ยืนห่างตู้เกมไม่เกินนี้ (พิกเซล) ถึงจะกดเล่นได้
+const REACH = 22; // ยืนห่างตู้เกม/ประตูด่านไม่เกินนี้ (พิกเซล) ถึงจะกดใช้ได้
 
-// ฉากเมือง 4 ย่าน: แผนที่จาก Tiled + ประตูบ้าน (เดินชนประตูจากด้านล่าง = เข้าบ้านตัวเอง) + ป้ายย่าน + ตู้เกม Snake
+// ของที่เดินไปใกล้ๆ แล้วกด E หรือแตะเพื่อใช้ได้
+type Usable = { x: number; y: number; hint: Phaser.GameObjects.Text; use: () => void };
+
+// ฉากเมือง 4 ย่าน: แผนที่จาก Tiled + ประตูบ้าน (เดินชนประตูจากด้านล่าง = เข้าบ้านตัวเอง) + ป้ายย่าน + ตู้เกม Snake + ประตูด่านคณิต
 export class TownScene extends WorldScene {
   // place = id ตึกสาธารณะ (ว่าง = ประตูบ้าน เข้าบ้านตัวเอง)
   private doors: { rect: Phaser.Geom.Rectangle; place: string }[] = [];
   private lastDoorAt = 0;
-  private arcade?: { x: number; y: number; hint: Phaser.GameObjects.Text };
+  private usables: Usable[] = [];
   private keyE!: Phaser.Input.Keyboard.Key;
 
   constructor() {
@@ -67,6 +70,8 @@ export class TownScene extends WorldScene {
     const colliders: Phaser.Types.Physics.Arcade.ArcadeColliderType[] = [walls, block];
     const spot = map.findObject('objects', (o) => o.name === 'arcade');
     if (spot) colliders.push(this.buildArcade(spot.x!, spot.y!));
+    const gate = map.findObject('objects', (o) => o.name === 'gate');
+    if (gate) colliders.push(this.buildGate(gate.x!, gate.y!));
     this.keyE = this.input.keyboard!.addKey('E', false);
 
     return { width: map.widthInPixels, height: map.heightInPixels, colliders, zoom: 2, followCamera: true };
@@ -76,33 +81,51 @@ export class TownScene extends WorldScene {
   private buildArcade(x: number, y: number) {
     const sprite = this.add.image(x, y + 16, arcadeTexture(this)).setOrigin(0, 1).setDepth(depthAt(y + 16));
     sprite.setInteractive({ useHandCursor: true });
-    sprite.on('pointerdown', () => this.openArcade());
 
     const touch = this.sys.game.device.input.touch; // มือถือไม่มีปุ่ม E
     const hint = makeLabel(this, touch ? 'แตะตู้ หรือกด E 🐍' : 'กด E เล่น 🐍', '#ffcf5c').setOrigin(0.5, 1).setPosition(x + 8, y - 10).setVisible(false);
-    this.arcade = { x: x + 8, y: y + 8, hint };
+    const usable: Usable = { x: x + 8, y: y + 8, hint, use: () => this.bridge.emit('open-arcade') };
+    this.usables.push(usable);
+    sprite.on('pointerdown', () => this.tryUse(usable));
 
     const block = this.add.zone(x, y + 4, 16, 12).setOrigin(0);
     this.physics.add.existing(block, true);
     return block;
   }
 
-  private nearArcade() {
-    if (!this.arcade) return false;
-    const { x, y } = this.me.sprite;
-    return Phaser.Math.Distance.Between(x, y + 4, this.arcade.x, this.arcade.y) < ARCADE_REACH;
+  // ประตูด่านคณิตกว้าง 2 ช่อง สูง 2 ช่อง (x, y = มุมซ้ายบน) เข้าได้จากด้านล่าง
+  private buildGate(x: number, y: number) {
+    const sprite = this.add.image(x, y + 32, gateTexture(this)).setOrigin(0, 1).setDepth(depthAt(y + 32));
+    sprite.setInteractive({ useHandCursor: true });
+    const touch = this.sys.game.device.input.touch;
+    const hint = makeLabel(this, touch ? 'แตะประตู หรือกด E ⚔️' : 'กด E เข้าด่าน ⚔️', '#ffcf5c').setOrigin(0.5, 1).setPosition(x + 16, y - 22).setVisible(false); // ลอยเหนือป้ายชื่อประตู
+    const usable: Usable = { x: x + 16, y: y + 30, hint, use: () => this.bridge.emit('open-gate', 'math') };
+    this.usables.push(usable);
+    sprite.on('pointerdown', () => this.tryUse(usable));
+
+    // ฐานประตูเดินทะลุไม่ได้ ยืนหน้าประตูแล้วกด E (หรือแตะ) เพื่อเข้า
+    const block = this.add.zone(x, y + 20, 32, 12).setOrigin(0);
+    this.physics.add.existing(block, true);
+    return block;
   }
 
-  private openArcade() {
-    if (this.nearArcade()) this.bridge.emit('open-arcade');
+  private near(u: Usable) {
+    const { x, y } = this.me.sprite;
+    return Phaser.Math.Distance.Between(x, y + 4, u.x, u.y) < REACH;
+  }
+
+  private tryUse(u: Usable) {
+    if (this.near(u)) u.use();
   }
 
   protected afterUpdate() {
     // ต้องอ่าน JustDown ทุกเฟรม ไม่งั้น Phaser จะจำการกด E ค้างไว้ แล้วตู้เปิดเองตอนเดินมาถึง
     const pressedE = Phaser.Input.Keyboard.JustDown(this.keyE);
-    const near = this.nearArcade();
-    this.arcade?.hint.setVisible(near);
-    if (pressedE && near && !this.isTyping()) this.openArcade(); // พิมพ์ตัว e/ำ ในแชทต้องไม่เปิดตู้
+    for (const u of this.usables) {
+      const near = this.near(u);
+      u.hint.setVisible(near);
+      if (pressedE && near && !this.isTyping()) u.use(); // พิมพ์ตัว e/ำ ในแชทต้องไม่เปิดตู้
+    }
 
     const { x, y } = this.me.sprite;
     const now = this.time.now;
@@ -140,6 +163,37 @@ function arcadeTexture(scene: Phaser.Scene) {
   rect('#e04f5f', 9, 15, 2, 2); // ปุ่ม
   rect('#4fd1c5', 12, 15, 1, 2);
   rect('#523b80', 2, 19, 12, 4); // ฐานตู้
+  tex.refresh();
+  return key;
+}
+
+// ภาพประตูด่านคณิต 32x32 วาดด้วยโค้ด: ซุ้มประตูหิน หลังคาแดง ข้างในเป็นประตูวนสีม่วง มีเครื่องหมายบวกลบคูณหาร
+function gateTexture(scene: Phaser.Scene) {
+  const key = 'math-gate';
+  if (scene.textures.exists(key)) return key;
+  const tex = scene.textures.createCanvas(key, 32, 32)!;
+  const ctx = tex.getContext();
+  const rect = (c: string, x: number, y: number, w: number, h: number) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, w, h);
+  };
+  rect('#2b1d26', 0, 2, 32, 6); // หลังคา (เส้นขอบ)
+  rect('#c94a4a', 1, 3, 30, 4);
+  rect('#e86a5a', 1, 3, 30, 1);
+  rect('#2b1d26', 3, 8, 26, 2); // คาน
+  rect('#2b1d26', 3, 10, 7, 22); // เสาซ้าย
+  rect('#8a8399', 4, 10, 5, 21);
+  rect('#a9a2b8', 4, 10, 1, 21);
+  rect('#2b1d26', 22, 10, 7, 22); // เสาขวา
+  rect('#8a8399', 23, 10, 5, 21);
+  rect('#a9a2b8', 23, 10, 1, 21);
+  rect('#3d2a6b', 10, 10, 12, 22); // ประตูวน
+  rect('#6b4fa3', 11, 12, 10, 19);
+  rect('#9b7fe0', 13, 14, 6, 15);
+  rect('#c9b8ff', 15, 17, 2, 9);
+  rect('#ffcf5c', 12, 4, 8, 1); // ป้าย + − × ÷ บนหลังคา
+  rect('#ffcf5c', 15, 3, 2, 3);
+  rect('#2b1d26', 13, 31, 6, 1);
   tex.refresh();
   return key;
 }

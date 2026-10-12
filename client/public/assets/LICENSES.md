@@ -7,3 +7,4 @@
 | characters/*.png | Ninja Adventure by Pixel-boy & AAA (pixel-boy.itch.io/ninja-adventure-asset-pack) | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
 | tiles/ninja/*.png | Ninja Adventure by Pixel-boy & AAA (pixel-boy.itch.io/ninja-adventure-asset-pack) | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
 | tiles/ninja/TilesetElement.png, tileset_bed.png, TilesetInteriorFloor.png | Ninja Adventure by Pixel-boy & AAA | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
+| monsters/*.png | Ninja Adventure by Pixel-boy & AAA (มอนสเตอร์และบอสจาก Actor/Monster, Actor/Boss) | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
