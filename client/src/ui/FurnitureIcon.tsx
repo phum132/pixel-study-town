@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { drawFurniture, type Furniture } from '../lib/furniture';
-import { loadFurnitureSheet } from '../lib/home';
+import { loadFurnitureSheets } from '../lib/home';
 
 // ไอคอนเฟอร์นิเจอร์ในหน้าแต่งห้อง (ชิ้นเล็กขยาย 2 เท่า ชิ้นใหญ่ขนาดจริง)
 export function FurnitureIcon({ item }: { item: Furniture }) {
@@ -9,11 +9,11 @@ export function FurnitureIcon({ item }: { item: Furniture }) {
 
   useEffect(() => {
     let alive = true;
-    loadFurnitureSheet().then((sheet) => {
+    loadFurnitureSheets().then((sheets) => {
       const ctx = ref.current?.getContext('2d');
       if (!alive || !ctx) return;
       ctx.clearRect(0, 0, item.w * 16, item.h * 16);
-      drawFurniture(ctx, item, sheet);
+      drawFurniture(ctx, item, sheets);
     });
     return () => {
       alive = false;

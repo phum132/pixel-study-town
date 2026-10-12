@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { WorldScene } from './WorldScene';
 import { depthAt } from './avatar';
-import { drawRug, frameOf, FURNITURE_BY_ID, shade, type Furniture } from '../lib/furniture';
+import { drawRug, frameOf, FURNITURE_BY_ID, shade, sheetOf, SHEETS, type Furniture } from '../lib/furniture';
 import {
   canPlace,
   DEFAULT_LAYOUT,
@@ -43,7 +43,10 @@ export class HomeScene extends WorldScene {
 
   preload() {
     super.preload();
-    this.load.spritesheet('indoor', 'assets/tiles/roguelike-indoor.png', { frameWidth: 16, frameHeight: 16, spacing: 1 });
+    for (const sheet of Object.values(SHEETS)) {
+      this.load.spritesheet(sheet.key, sheet.url, { frameWidth: 16, frameHeight: 16, spacing: sheet.stride - 16 });
+    }
+    this.load.spritesheet('ninja-floor', 'assets/tiles/ninja/TilesetInteriorFloor.png', { frameWidth: 16, frameHeight: 16 });
   }
 
   protected buildWorld() {
@@ -130,7 +133,9 @@ export class HomeScene extends WorldScene {
   // วาดห้องใหม่ทั้งหมดจากข้อมูลล่าสุด (ธีม + เฟอร์นิเจอร์)
   private render() {
     const { theme, layout } = this.home;
-    this.floor.setTexture(floorTexture(this, theme.floor, theme.floorColor));
+    // พื้น: ลายจากชุด Ninja แล้วย้อมสีตามธีม (ผสมขาวครึ่งหนึ่ง ลายจะได้ยังเห็นชัด)
+    this.floor.setTexture('ninja-floor', FLOOR_FRAMES[theme.floor]);
+    this.floor.setTint(Phaser.Display.Color.HexStringToColor(shade(theme.floorColor, 0.45)).color);
     this.wall.setTexture(wallTexture(this, theme.wall, theme.wallColor));
 
     this.furniture.forEach((o) => o.destroy());
@@ -155,7 +160,7 @@ export class HomeScene extends WorldScene {
     const depth = item.kind === 'wall' ? 2 : item.seat ? 1.5 : depthAt(py + item.h * T);
     for (let dy = 0; dy < item.h; dy++) {
       for (let dx = 0; dx < item.w; dx++) {
-        const img = this.add.image(px + dx * T, py + dy * T, 'indoor', frameOf(item, dx, dy)).setOrigin(0).setDepth(depth);
+        const img = this.add.image(px + dx * T, py + dy * T, sheetOf(item).key, frameOf(item, dx, dy)).setOrigin(0).setDepth(depth);
         this.furniture.push(img);
       }
     }
@@ -179,51 +184,31 @@ function canvasTexture(scene: Phaser.Scene, key: string, w: number, h: number, d
   return key;
 }
 
-function floorTexture(scene: Phaser.Scene, style: FloorStyle, color: string) {
-  return canvasTexture(scene, `floor-${style}-${color}`, 16, 16, (ctx) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, 16, 16);
-    if (style === 'wood') {
-      // แผ่นไม้: เส้นแนวนอนทุก 4px และรอยต่อสลับตำแหน่งกันแต่ละแถว
-      ctx.fillStyle = shade(color, -0.2);
-      [0, 8, 4, 12].forEach((seam, row) => {
-        ctx.fillRect(0, row * 4 + 3, 16, 1);
-        ctx.fillRect(seam, row * 4, 1, 3);
-      });
-      ctx.fillStyle = shade(color, 0.1);
-      [1, 9, 5, 13].forEach((x, row) => ctx.fillRect(x + 2, row * 4 + 1, 3, 1));
-    } else if (style === 'tile') {
-      ctx.fillStyle = shade(color, 0.12);
-      ctx.fillRect(0, 0, 8, 8);
-      ctx.fillRect(8, 8, 8, 8);
-      ctx.fillStyle = shade(color, -0.25);
-      ctx.fillRect(0, 0, 16, 1);
-      ctx.fillRect(0, 0, 1, 16);
-      ctx.fillRect(0, 8, 16, 1);
-      ctx.fillRect(8, 0, 1, 16);
-    } else {
-      ctx.fillStyle = shade(color, -0.1);
-      [[2, 3], [9, 1], [13, 6], [5, 9], [11, 12], [1, 14], [7, 5]].forEach(([x, y]) => ctx.fillRect(x, y, 1, 1));
-      ctx.fillStyle = shade(color, 0.12);
-      [[4, 1], [12, 3], [8, 10], [3, 12], [14, 14]].forEach(([x, y]) => ctx.fillRect(x, y, 1, 1));
-    }
-  });
-}
+// ช่องลายพื้นใน TilesetInteriorFloor.png (22 คอลัมน์) ที่ปูซ้ำแล้วต่อกันเนียน
+const FLOOR_FRAMES: Record<FloorStyle, number> = {
+  wood: 1 * 22 + 13, // ไม้กระดาน
+  tile: 1 * 22 + 1, // อิฐ/กระเบื้อง
+  carpet: 5 * 22 + 14, // ลายดอก
+};
 
 function wallTexture(scene: Phaser.Scene, style: WallStyle, color: string) {
   return canvasTexture(scene, `wall-${style}-${color}`, 16, 32, (ctx) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, 16, 32);
-    ctx.fillStyle = shade(color, -0.08);
+    const rect = (c: string, x: number, y: number, w: number, h: number) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, w, h);
+    };
+    rect(color, 0, 0, 16, 32);
     if (style === 'stripe') {
-      ctx.fillRect(0, 0, 4, 32);
-      ctx.fillRect(8, 0, 4, 32);
+      rect(shade(color, -0.08), 0, 4, 4, 22);
+      rect(shade(color, -0.08), 8, 4, 4, 22);
     } else if (style === 'dots') {
-      [[3, 4], [11, 12], [3, 20], [11, 28]].forEach(([x, y]) => ctx.fillRect(x, y, 2, 2));
+      [[3, 8], [11, 16], [3, 22]].forEach(([x, y]) => rect(shade(color, -0.12), x, y, 2, 2));
     }
-    // ขอบบนเข้ม ให้ดูเป็นเพดาน
-    ctx.fillStyle = shade(color, -0.45);
-    ctx.fillRect(0, 0, 16, 2);
+    rect('#1d1a22', 0, 0, 16, 3); // ขอบเพดานเข้มหนา (แบบชุด Ninja)
+    rect(shade(color, 0.35), 0, 3, 16, 1); // แสงใต้เพดาน
+    rect(shade(color, -0.25), 0, 26, 16, 5); // บัวผนัง
+    rect(shade(color, -0.1), 0, 26, 16, 1);
+    rect('#1d1a22', 0, 31, 16, 1); // เส้นต่อพื้น
   });
 }
 

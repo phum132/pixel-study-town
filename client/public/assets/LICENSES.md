@@ -6,3 +6,4 @@
 | tiles/roguelike-indoor.png | Roguelike Indoors by Kenney (www.kenney.nl) | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
 | characters/*.png | Ninja Adventure by Pixel-boy & AAA (pixel-boy.itch.io/ninja-adventure-asset-pack) | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
 | tiles/ninja/*.png | Ninja Adventure by Pixel-boy & AAA (pixel-boy.itch.io/ninja-adventure-asset-pack) | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |
+| tiles/ninja/TilesetElement.png, tileset_bed.png, TilesetInteriorFloor.png | Ninja Adventure by Pixel-boy & AAA | CC0 1.0 (ใช้ฟรี รวมถึงเชิงพาณิชย์) |

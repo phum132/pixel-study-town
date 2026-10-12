@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { FURNITURE_BY_ID, type Furniture } from './furniture';
+import { FURNITURE_BY_ID, SHEETS, type Furniture, type SheetId } from './furniture';
 
 // ขนาดห้อง (ต้องตรงกับ HomeRoom ในเซิร์ฟเวอร์): กว้าง 12 ช่อง สูง 9 ช่อง
 // แถว 0-1 = ผนัง (แขวนของได้), แถว 2-8 = พื้น, ประตูอยู่กลางแถวล่างสุด
@@ -33,13 +33,14 @@ export const DEFAULT_THEME: Theme = { floor: 'wood', floorColor: '#b07a4f', wall
 // ห้องเริ่มต้นของผู้เล่นใหม่
 export const DEFAULT_LAYOUT: Placed[] = [
   { i: 'rug_red', x: 4, y: 4 },
-  { i: 'bed_single_orange', x: 1, y: 2 },
-  { i: 'bookshelf', x: 3, y: 2 },
-  { i: 'plant_big', x: 10, y: 2 },
-  { i: 'table_square', x: 8, y: 5 },
-  { i: 'chair_left', x: 9, y: 5 },
-  { i: 'painting_map', x: 6, y: 0 },
-  { i: 'frames_small', x: 1, y: 0 },
+  { i: 'n_bed_blue', x: 1, y: 2 },
+  { i: 'n_drawer', x: 2, y: 2 },
+  { i: 'n_bookshelf', x: 3, y: 2 },
+  { i: 'n_plant', x: 10, y: 2 },
+  { i: 'n_table', x: 8, y: 5 },
+  { i: 'n_chair', x: 9, y: 5 },
+  { i: 'n_painting_mountain', x: 6, y: 0 },
+  { i: 'n_frame', x: 1, y: 0 },
 ];
 
 // ช่องที่ของชิ้นนี้ทับอยู่
@@ -135,14 +136,18 @@ export async function fetchUsername(userId: string): Promise<string> {
   return data?.username ?? 'ไม่ทราบชื่อ';
 }
 
-// โหลดแผ่นภาพเฟอร์นิเจอร์ครั้งเดียว ใช้ทำไอคอนในหน้าแต่งห้อง
-let sheetPromise: Promise<HTMLImageElement> | null = null;
-export function loadFurnitureSheet() {
-  sheetPromise ??= new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = '/assets/tiles/roguelike-indoor.png';
-  });
-  return sheetPromise;
+// โหลดแผ่นภาพเฟอร์นิเจอร์ทุกชุดครั้งเดียว ใช้ทำไอคอนในหน้าแต่งห้อง
+let sheetsPromise: Promise<Record<SheetId, HTMLImageElement>> | null = null;
+export function loadFurnitureSheets() {
+  const load = ([id, s]: [SheetId, { url: string }]) =>
+    new Promise<[SheetId, HTMLImageElement]>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve([id, img]);
+      img.onerror = reject;
+      img.src = '/' + s.url;
+    });
+  sheetsPromise ??= Promise.all((Object.entries(SHEETS) as [SheetId, { url: string }][]).map(load)).then(
+    (list) => Object.fromEntries(list) as Record<SheetId, HTMLImageElement>,
+  );
+  return sheetsPromise;
 }

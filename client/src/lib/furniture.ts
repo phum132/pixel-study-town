@@ -1,5 +1,6 @@
 // รายการเฟอร์นิเจอร์ที่วางในห้องได้
-// tile = [คอลัมน์, แถว] ของช่องซ้ายบนใน roguelike-indoor.png (แผ่นภาพ 27 คอลัมน์ ช่องละ 16px เว้นระยะ 1px)
+// tile = [คอลัมน์, แถว] ของช่องซ้ายบนในแผ่นภาพ sheet (ไม่ใส่ = ชุด Kenney เดิม)
+// ⚠️ ห้ามเปลี่ยน id, w, h ของชิ้นที่มีอยู่แล้ว เพราะบ้านที่ผู้เล่นแต่งไว้ในฐานข้อมูลเก็บ id กับตำแหน่งไว้
 // kind: floor = วางบนพื้น เดินชน (ยกเว้นที่นั่ง seat), wall = แขวนผนัง, rug = พรมปูพื้น เดินทับได้
 
 export type FurnitureKind = 'floor' | 'wall' | 'rug';
@@ -13,11 +14,55 @@ export type Furniture = {
   tile?: [col: number, row: number];
   color?: string; // สำหรับพรม (วาดด้วยโค้ด)
   seat?: boolean; // ที่นั่ง: เดินทับได้ ไม่ชน (ยืนบนเก้าอี้ = นั่งที่โต๊ะ)
+  sheet?: SheetId;
 };
 
-export const SHEET_COLUMNS = 27;
+// แผ่นภาพเฟอร์นิเจอร์: Kenney (เว้นระยะ 1px ระหว่างช่อง) และ Ninja Adventure (ชิดกัน)
+export type SheetId = 'kenney' | 'element' | 'bed';
+export const SHEETS: Record<SheetId, { key: string; url: string; columns: number; stride: number }> = {
+  kenney: { key: 'indoor', url: 'assets/tiles/roguelike-indoor.png', columns: 27, stride: 17 },
+  element: { key: 'ninja-element', url: 'assets/tiles/ninja/TilesetElement.png', columns: 16, stride: 16 },
+  bed: { key: 'ninja-bed', url: 'assets/tiles/ninja/tileset_bed.png', columns: 14, stride: 16 },
+};
+export const sheetOf = (item: Furniture) => SHEETS[item.sheet ?? 'kenney'];
 
 export const FURNITURE: Furniture[] = [
+  // ===== ชุด Ninja Adventure (เข้ากับเมืองและตัวละคร) =====
+  // --- เตียง (ยาว 2 ช่อง) ---
+  { id: 'n_bed_green', name: 'เตียงเดี่ยวเขียว', kind: 'floor', w: 1, h: 2, tile: [12, 0], sheet: 'bed' },
+  { id: 'n_bed_red', name: 'เตียงเดี่ยวแดง', kind: 'floor', w: 1, h: 2, tile: [5, 3], sheet: 'bed' },
+  { id: 'n_bed_blue', name: 'เตียงเดี่ยวฟ้า', kind: 'floor', w: 1, h: 2, tile: [12, 3], sheet: 'bed' },
+  { id: 'n_bed2_green', name: 'เตียงคู่เขียว', kind: 'floor', w: 2, h: 2, tile: [7, 0], sheet: 'bed' },
+  { id: 'n_bed2_red', name: 'เตียงคู่แดง', kind: 'floor', w: 2, h: 2, tile: [0, 3], sheet: 'bed' },
+  { id: 'n_bed2_blue', name: 'เตียงคู่ฟ้า', kind: 'floor', w: 2, h: 2, tile: [7, 3], sheet: 'bed' },
+  // --- โต๊ะ / เก้าอี้ ---
+  { id: 'n_table', name: 'โต๊ะไม้', kind: 'floor', w: 1, h: 1, tile: [3, 9], sheet: 'element' },
+  { id: 'n_table_long', name: 'โต๊ะไม้ยาว', kind: 'floor', w: 3, h: 1, tile: [2, 10], sheet: 'element' },
+  { id: 'n_table_cloth', name: 'โต๊ะผ้าแดง', kind: 'floor', w: 1, h: 1, tile: [14, 0], sheet: 'element' },
+  { id: 'n_chair', name: 'เก้าอี้ไม้', kind: 'floor', w: 1, h: 1, tile: [0, 9], sheet: 'element', seat: true },
+  // --- ชั้นวาง / ตู้ ---
+  { id: 'n_bookshelf', name: 'ชั้นหนังสือ', kind: 'floor', w: 1, h: 2, tile: [3, 7], sheet: 'element' },
+  { id: 'n_shelf', name: 'ชั้นวางของ', kind: 'floor', w: 1, h: 2, tile: [4, 7], sheet: 'element' },
+  { id: 'n_bookcase', name: 'ตู้หนังสือใหญ่', kind: 'floor', w: 2, h: 2, tile: [8, 7], sheet: 'element' },
+  { id: 'n_shelf_wide', name: 'ชั้นวางกว้าง', kind: 'floor', w: 2, h: 2, tile: [10, 7], sheet: 'element' },
+  { id: 'n_dresser', name: 'ตู้ลิ้นชักใหญ่', kind: 'floor', w: 2, h: 2, tile: [6, 7], sheet: 'element' },
+  { id: 'n_drawer', name: 'ตู้ลิ้นชัก', kind: 'floor', w: 1, h: 1, tile: [1, 8], sheet: 'element' },
+  { id: 'n_drawer2', name: 'ตู้ลิ้นชักเล็ก', kind: 'floor', w: 1, h: 1, tile: [2, 8], sheet: 'element' },
+  // --- ของใช้ ---
+  { id: 'n_plant', name: 'กระถางต้นไม้', kind: 'floor', w: 1, h: 1, tile: [0, 8], sheet: 'element' },
+  { id: 'n_barrel', name: 'ถังไม้', kind: 'floor', w: 1, h: 1, tile: [1, 0], sheet: 'element' },
+  { id: 'n_chest', name: 'หีบสมบัติ', kind: 'floor', w: 1, h: 1, tile: [3, 1], sheet: 'element' },
+  { id: 'n_crate', name: 'ลังไม้', kind: 'floor', w: 1, h: 1, tile: [6, 0], sheet: 'element' },
+  { id: 'n_pot', name: 'ไหแดง', kind: 'floor', w: 1, h: 1, tile: [3, 0], sheet: 'element' },
+  { id: 'n_stove', name: 'เตาดิน', kind: 'floor', w: 1, h: 1, tile: [12, 0], sheet: 'element' },
+  // --- ติดผนัง ---
+  { id: 'n_notice', name: 'กระดานประกาศ', kind: 'wall', w: 3, h: 1, tile: [11, 1], sheet: 'element' },
+  { id: 'n_painting_mountain', name: 'ภาพภูเขา', kind: 'wall', w: 1, h: 1, tile: [10, 1], sheet: 'element' },
+  { id: 'n_painting_round', name: 'ภาพวงกลม', kind: 'wall', w: 1, h: 1, tile: [8, 10], sheet: 'element' },
+  { id: 'n_frame', name: 'กรอบรูปยาว', kind: 'wall', w: 1, h: 1, tile: [6, 10], sheet: 'element' },
+  { id: 'n_curtain', name: 'ผ้าม่านแดง', kind: 'wall', w: 3, h: 1, tile: [8, 9], sheet: 'element' },
+
+  // ===== ชุดเดิม (Kenney) เก็บไว้ให้บ้านที่แต่งไปแล้วยังใช้ได้ =====
   // --- เตียง ---
   { id: 'bed_single_orange', name: 'เตียงเดี่ยวส้ม', kind: 'floor', w: 1, h: 1, tile: [9, 6] },
   { id: 'bed_single_green', name: 'เตียงเดี่ยวเขียว', kind: 'floor', w: 1, h: 1, tile: [9, 7] },
@@ -69,7 +114,7 @@ export const FURNITURE_BY_ID = new Map(FURNITURE.map((f) => [f.id, f]));
 // เลขเฟรมใน spritesheet ของช่อง (dx, dy) ภายในชิ้นเฟอร์นิเจอร์
 export function frameOf(item: Furniture, dx: number, dy: number) {
   const [col, row] = item.tile!;
-  return (row + dy) * SHEET_COLUMNS + col + dx;
+  return (row + dy) * sheetOf(item).columns + col + dx;
 }
 
 // สีเข้ม/สว่างขึ้น: amount -1..1
@@ -83,15 +128,23 @@ export function shade(hex: string, amount: number) {
 }
 
 // วาดเฟอร์นิเจอร์หนึ่งชิ้นลง canvas (ใช้ทำไอคอนในหน้าแต่งห้อง)
-export function drawFurniture(ctx: CanvasRenderingContext2D, item: Furniture, sheet: HTMLImageElement, x = 0, y = 0) {
+export function drawFurniture(
+  ctx: CanvasRenderingContext2D,
+  item: Furniture,
+  sheets: Record<SheetId, HTMLImageElement>,
+  x = 0,
+  y = 0,
+) {
   if (item.kind === 'rug') {
     drawRug(ctx, item, x, y);
     return;
   }
   const [col, row] = item.tile!;
+  const { stride } = sheetOf(item);
+  const img = sheets[item.sheet ?? 'kenney'];
   for (let dy = 0; dy < item.h; dy++) {
     for (let dx = 0; dx < item.w; dx++) {
-      ctx.drawImage(sheet, (col + dx) * 17, (row + dy) * 17, 16, 16, x + dx * 16, y + dy * 16, 16, 16);
+      ctx.drawImage(img, (col + dx) * stride, (row + dy) * stride, 16, 16, x + dx * 16, y + dy * 16, 16, 16);
     }
   }
 }
